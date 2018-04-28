@@ -26,7 +26,6 @@ class PlanetPipeline:
         
         self.search_results = []
         
-
     def load_city_boundaries(self, geojson_directory):
         for i in os.listdir(geojson_directory):
             with open(geojson_directory + "/" + i) as f:
@@ -60,8 +59,3 @@ class PlanetPipeline:
             sys.stdout.write('\n')
               
         self.search_results = results # keep results for later
-
-if __name__ == "__main__":
-    p = PlanetPipeline()
-    p.search_all(print_field = 'id')
-                
