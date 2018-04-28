@@ -40,7 +40,7 @@ class PlanetPipeline:
                 with open(self.geojson_dir + "/" + i) as f:
                     self.search(f, **kwargs)
 
-    def search(self, geojson_file, item_types = ['PSScene4Band'],
+    def search(self, geojson_file, item_types = DEFAULT_ITEM_TYPE,
                print_field = None, print_lim = 10):
         
         # load geojson and take the parts we need to filter
@@ -57,6 +57,7 @@ class PlanetPipeline:
             for item in results.items_iter(print_lim):
               # each item is a GeoJSON feature
               sys.stdout.write('%s\n' % item[print_field])
+            sys.stdout.write('\n')
               
         self.search_results = results # keep results for later
 
