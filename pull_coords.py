@@ -1,7 +1,13 @@
 '''
+CMSC 123000
+Team TBD
+
+Pulls top left and bottom right coordinates from UNOSAT damage reports.
+Returns a list of DamageAssessment objects.
 '''
 
 import re
+
 from requests import get
 from bs4 import BeautifulSoup
 
@@ -13,43 +19,50 @@ def pull_info():
     '''
     Build a list of dmg report objects w/ coords.
     '''
-    initial_soup = BeautifulSoup(get(STARTING_URL).content(), "html.parser")
+    initial_soup = BeautifulSoup(get(STARTING_URL).content, "html.parser")
     link_list = initial_soup.find_all("a")
     damage_assessments = []
 
     for lnk in link_list:
+        # Check if damage assessment
         if lnk.contents and ("damage" in lnk.contents[0].lower()):
-            dmg_assess = DamageAssessment(lnk["href"])
+            url = lnk['href']
+            soup = BeautifulSoup(get(url).content, "html.parser")
 
-            if dmg_assess.top_left:
-                damage_assessments.append(dmg_assess)
+            # Check that shape file is included on page
+            if re.findall("Shapefile", str(soup.find_all("a"))):
+                dmg_assess = DamageAssessment(soup, url)
+
+                # If coordinates are listed, add dmg assess to list
+                if dmg_assess.top_left and dmg_assess.bottom_right:
+                    damage_assessments.append(dmg_assess)
+                else:
+                    print('no coords', url)
+
+            else:
+                print('no shp', url)
 
     return damage_assessments
 
 
 class DamageAssessment(object):
 
-    def __init__(self, url):
+    def __init__(self, soup, url):
         self.url = url
-        self.soup = BeautifulSoup(get(url).content(), "html.parser")
+        self.soup = soup
         self.title = self.soup.title
         self.top_left, self.bottom_right = self.get_coords()
+        self.images = []
 
     def get_coords(self):
         '''
-        Pulls top le ft and bottom right coords from page.
+        Pulls top left and bottom right coords from page.
         '''
-        coords = re.findall(r"\d\d\.\d\d\d\d\d\d\d", str(self.soup))
+        coord_section = str(self.soup.find_all('td'))
+        raw_coords = re.findall(r"\d\d\.\d\d* x \d\d\.\d\d*", coord_section)
 
-        if len(coords) > 4:
-            print("less found at {}".format(self.url))
-            return None, None
-        if len(coords) > 4:
-            print("more found at {}".format(self.url))
-            return None, None
-
-        top_left = coords[:2]
-        bottom_right = coords[2:]
+        top_left = raw_coords[0].split(" x ")
+        bottom_right = raw_coords[1].split(" x ")
 
         return top_left, bottom_right
 
