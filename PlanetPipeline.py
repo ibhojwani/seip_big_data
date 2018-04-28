@@ -34,19 +34,23 @@ class PlanetPipeline:
                 self.geometries.append({i: loaded_file})
         self.geojson_dir = geojson_directory
 
-    def search_all(self, **kwargs):
+    def search_all(self, date_after, date_before, **kwargs):
         for i in os.listdir(self.geojson_dir):
                 with open(self.geojson_dir + "/" + i) as f:
-                    self.search(f, **kwargs)
+                    self.search(f, date_after, date_before, **kwargs)
 
-    def search(self, geojson_file, item_types = DEFAULT_ITEM_TYPE,
+    def search(self, geojson_file, date_after, date_before,
+               item_types = DEFAULT_ITEM_TYPE,
                print_field = None, print_lim = 10):
+
+        start = api.filters.date_range('acquired', gt=date_after)
+        end = api.filters.date_range('acquired', lt=date_before)
         
         # load geojson and take the parts we need to filter
         aoi = json.load(geojson_file)['features'][0]['geometry']
 
         # build a filter for the AOI
-        query = api.filters.and_filter(api.filters.geom_filter(aoi))
+        query = api.filters.and_filter(api.filters.geom_filter(aoi), start, end)
         request = api.filters.build_search_request(query, item_types)
         # this will cause an exception if there are any API related errors
         results = self.client.quick_search(request)
@@ -59,3 +63,9 @@ class PlanetPipeline:
             sys.stdout.write('\n')
               
         self.search_results = results # keep results for later
+
+if __name__ == "__main__":
+    p = PlanetPipeline()
+    p.search_all(date_after = "2017-01-01", date_before = "2017-01-30",
+                 print_field = 'id')
+    
