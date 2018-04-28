@@ -8,6 +8,8 @@ from settings import GEOJSON_DIRECTORY
 
 class PlanetPipeline:
 # This is the planet pipeline
+# largely based on planet documentation
+# https://planetlabs.github.io/planet-client-python/api/examples.html
     
     def __init__(self, geojson_directory = None, default_item_type = None):
         # if not specified, use constants
