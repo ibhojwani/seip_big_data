@@ -36,11 +36,6 @@ def pull_info():
                 # If coordinates are listed, add dmg assess to list
                 if dmg_assess.top_left and dmg_assess.bottom_right:
                     damage_assessments.append(dmg_assess)
-                else:
-                    print('no coords', url)
-
-            else:
-                print('no shp', url)
 
     return damage_assessments
 
