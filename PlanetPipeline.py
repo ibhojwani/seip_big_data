@@ -34,23 +34,37 @@ class PlanetPipeline:
                 self.geometries.append({i: loaded_file})
         self.geojson_dir = geojson_directory
 
-    def search_all(self, date_after, date_before, **kwargs):
+    def search_all(self, **kwargs):
         for i in os.listdir(self.geojson_dir):
                 with open(self.geojson_dir + "/" + i) as f:
-                    self.search(f, date_after, date_before, **kwargs)
+                    self.search(f, **kwargs)
 
-    def search(self, geojson_file, date_after, date_before,
-               item_types = DEFAULT_ITEM_TYPE,
-               print_field = None, print_lim = 10):
-
+    def make_filters(self, date_after, date_before, geojson_file,
+                     cloud_threshold):
+        # make cloud cover filters
+        clouds = api.filters.range_filter('cloud_cover', lt=cloud_threshold)
+        
+        # make date filters
         start = api.filters.date_range('acquired', gt=date_after)
         end = api.filters.date_range('acquired', lt=date_before)
         
         # load geojson and take the parts we need to filter
         aoi = json.load(geojson_file)['features'][0]['geometry']
+        place = api.filters.geom_filter(aoi)
 
         # build a filter for the AOI
-        query = api.filters.and_filter(api.filters.geom_filter(aoi), start, end)
+        query = api.filters.and_filter(place, start, end, clouds)
+        return query
+
+    def search(self, geojson_file, date_after, date_before, cloud_threshold,
+               item_types = DEFAULT_ITEM_TYPE,
+               print_field = None, print_lim = 10):
+
+        query = self.make_filters(date_after = date_after,
+                                  date_before = date_before,
+                                  geojson_file = geojson_file,
+                                  cloud_threshold = cloud_threshold)
+
         request = api.filters.build_search_request(query, item_types)
         # this will cause an exception if there are any API related errors
         results = self.client.quick_search(request)
@@ -67,5 +81,5 @@ class PlanetPipeline:
 if __name__ == "__main__":
     p = PlanetPipeline()
     p.search_all(date_after = "2017-01-01", date_before = "2017-01-30",
-                 print_field = 'id')
+                 print_field = 'id', cloud_threshold = 0.9)
     
