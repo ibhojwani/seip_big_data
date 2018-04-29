@@ -147,8 +147,8 @@ class PlanetPipeline:
     
 if __name__ == "__main__":
     p = PlanetPipeline()
-    date_list = [("2017-06-01", "2017-06-30"),
-                 ("2017-07-01", "2017-07-30"),
+    date_list = [("2017-08-01", "2017-08-30"),
+                 ("2017-09-01", "2017-09-30"),
                  ]
 
     for i, j in date_list:
