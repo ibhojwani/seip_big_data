@@ -11,8 +11,6 @@ import time
 from subprocess import run
 from tkinter import filedialog
 
-
-
 from settings import DEFAULT_ITEM_TYPE
 from settings import GEOJSON_DIRECTORY
 from settings import ACTIVATION_REQUEST
