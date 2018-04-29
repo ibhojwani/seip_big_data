@@ -118,6 +118,8 @@ class PlanetPipeline:
                 if result:
                     print("Bingo! Got one: {}".format(i))
                     fetch_list.remove((i,j))
+            if len(fetch_list) < 1:
+                break
             time.sleep(60)
             counter += 1
             print("Percent Complete: {}".format(counter/num_tries))
