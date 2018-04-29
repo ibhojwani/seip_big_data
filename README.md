@@ -1,7 +1,7 @@
 # TBD 
 
 
-#### Ishaan Bhoijwani
+#### Ishaan Bhojwani
 #### Alexander Tyan
 #### Kevin Sun
 #### Tyler Amos
