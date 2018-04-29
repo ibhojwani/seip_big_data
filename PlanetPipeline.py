@@ -136,6 +136,4 @@ if __name__ == "__main__":
     p = PlanetPipeline()
     p.search_all(date_after = "2017-06-01", date_before = "2017-06-10",
                  print_field = 'id', cloud_threshold = 0.9,
-                 resolution_threshold = 3)
-    #p.fetch_trimmed_image('20170605_114318_0c42', DEFAULT_ITEM_TYPE, 'analytic')
-    
+                 resolution_threshold = 3) 
