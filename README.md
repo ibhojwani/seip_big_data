@@ -13,3 +13,4 @@
  - [ ] create a diagram/map of how code relates to one another
  - [ ] identify steps to take when pre-processing images
  - [ ] train a trial NN for classification
+ - [ ] create a workflow to check if a point from UNOSAT data is in a given geojson geometry with geopandas (look at spatial join functions)
