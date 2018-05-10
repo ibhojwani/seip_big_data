@@ -4,6 +4,8 @@ from scipy.ndimage import gaussian_filter
 from scipy import misc
 import matplotlib.pyplot as plt
 import numpy as np
+from osgeo import gdal
+import pygeoprocessing
 
 
 class GeoTiff:
@@ -74,19 +76,32 @@ class GeoTiff:
             matrix = self.sharp_bands[band]
         else:
             matrix = self.ndvi
-        fig = plt.figure(figsize=(100, 50))
-        ax = fig.add_subplot(121)
-        ax.imshow(matrix)
+        plt.imshow(matrix)
+        plt.colorbar()
         plt.savefig(destination)
 
 
-aleppo_full = GeoTiff()
-aleppo_full.ingest_data(input_file="data/experimental/aleppo_full_order/20180206_073917_0f42_3B_AnalyticMS.tif",
-                         num_bands=4, labels=["b", "g", "r", "n"])
-# Allow division by zero
-np.seterr(divide='ignore', invalid='ignore')
-aleppo_full.calculate_ndvi()
-aleppo_full.gaussify_bands(sigma=10)
-# aleppo_full.sharpen_bands()
-print(aleppo_full.gauss_bands)
+# aleppo_full = GeoTiff()
+# aleppo_full.ingest_data(input_file="data/experimental/aleppo_full_order/20180206_073917_0f42_3B_AnalyticMS.tif",
+#                          num_bands=4, labels=["b", "g", "r", "n"])
+# # Allow division by zero
+# np.seterr(divide='ignore', invalid='ignore')
+# aleppo_full.calculate_ndvi()
+# aleppo_full.gaussify_bands(sigma=10)
+# # aleppo_full.sharpen_bands()
+# print(aleppo_full.gauss_bands)
+
+# ALEPPO_APRIL = "data/experimental/aleppo_apr_02/merged_aleppo_20180402.tif"
+# ALEPPO_FEB = "data/experimental/aleppo_feb_06/aleppo_0206_merged.tif"
+# ALEPPO_MAY = "data/experimental/aleppo_may_03/aleppo_mergedmat32018.tif"
+
+# Changes to geoprocessing.py
+# 1. "range" used to be "xrange"
+# 2. Line 8 was "import exceptions"
+# 3. Line 30 was "fimport geoprocessing_core"
+# 4. Line 32 was nothing -> "from functools import reduce"
+
+
+
+
 
