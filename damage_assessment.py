@@ -15,7 +15,6 @@ from bs4 import BeautifulSoup
 STARTING_URL = "http://www.unitar.org/unosat/maps/SYR"
 
 
-
 class DamageAssessment(object):
 
     def __init__(self, soup, url):
@@ -24,6 +23,7 @@ class DamageAssessment(object):
         self.title = self.soup.title
         self.top_left, self.bottom_right = self.get_coords()
         self.images = []
+        self.shp = ""
 
     def get_coords(self):
         '''
