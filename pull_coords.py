@@ -15,6 +15,9 @@ from bs4 import BeautifulSoup
 STARTING_URL = "http://www.unitar.org/unosat/maps/SYR"
 
 
+
+
+
 def pull_info():
     '''
     Build a list of dmg report objects w/ coords.
