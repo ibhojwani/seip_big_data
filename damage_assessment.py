@@ -7,9 +7,10 @@ Returns a list of DamageAssessment objects.
 '''
 
 import re
-
+import geopandas
 from requests import get
 from bs4 import BeautifulSoup
+
 
 
 STARTING_URL = "http://www.unitar.org/unosat/maps/SYR"
@@ -22,8 +23,8 @@ class DamageAssessment(object):
         self.soup = soup
         self.title = self.soup.title
         self.top_left, self.bottom_right = self.get_coords()
-        self.images = []
-        self.shp = ""
+        self.shp = geopandas.GeoDataFrame
+        self.gpd_coords = self.shp.total_bounds
 
     def get_coords(self):
         '''
@@ -40,6 +41,16 @@ class DamageAssessment(object):
     def __repr__(self):
         return "url: {}, title: {}, TopLeft: {}, BottomRight: {}"\
             .format(self.url, self.title, self.top_left, self.bottom_right)
+
+
+def build_assessments(download=False, num=0, url=STARTING_URL):
+    return None
+
+
+def 
+
+
+
 
 
 def pull_info():
