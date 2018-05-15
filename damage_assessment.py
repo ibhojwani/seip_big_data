@@ -7,50 +7,119 @@ Returns a list of DamageAssessment objects.
 '''
 
 import re
-import geopandas
+import geopandas as gpd
 from requests import get
 from bs4 import BeautifulSoup
-
-
+import datetime
 
 STARTING_URL = "http://www.unitar.org/unosat/maps/SYR"
 
 
 class DamageAssessment(object):
+    def __init__(self, url):
 
-    def __init__(self, soup, url):
         self.url = url
-        self.soup = soup
-        self.title = self.soup.title
-        self.top_left, self.bottom_right = self.get_coords()
-        self.shp = geopandas.GeoDataFrame
-        self.gpd_coords = self.shp.total_bounds
+        self.title = None
+        self.location = None
+        self.id = None
+        self.date_posted = None
+        self.first_date = None
+        self.last_date = None
 
-    def get_coords(self):
-        '''
-        Pulls top left and bottom right coords from page.
-        '''
-        coord_section = str(self.soup.find_all('td'))
-        raw_coords = re.findall(r"\d\d\.\d\d* x \d\d\.\d\d*", coord_section)
+        self.top_left_site = None
+        self.bottom_left_site = None
+        self.top_left_gpd = None
+        self.bottom_right_gpd = None
 
-        top_left = raw_coords[0].split(" x ")
-        bottom_right = raw_coords[1].split(" x ")
-
-        return top_left, bottom_right
-
-    def __repr__(self):
-        return "url: {}, title: {}, TopLeft: {}, BottomRight: {}"\
-            .format(self.url, self.title, self.top_left, self.bottom_right)
+        self.shp_url = None
+        self.shp = None
+        self.crs = None
 
 
-def build_assessments(download=False, num=0, url=STARTING_URL):
+def get_assessment_links(soup):
+    '''
+    Gets the links to all damage assessment pages.
+    '''
+    page_links = soup.find_all("a")
+    link_list = []
+    for link in page_links:
+        if "damage" in link.text.lower():
+            link_list.append(link)
+
+    return link_list
+
+
+def parse_assessment_pages(url, dmg_assess):
+    ''' For a given DamageAssessment object, pull coords, date, id, and
+        the shapefile URL.
+        Inputs:
+            url: url to parse
+            dmg_assess: DamageAssessment object to modify
+        Returns None, but modifies dmg_assess.
+    '''
+    dmg_soup = BeautifulSoup(get(url).contents, "html.parser")
+
+    # If shapefile isn't on the page, return none
+    for link in dmg_soup.find_all("a"):
+        if "shapefile" in link.text.lower():
+            dmg_assess.shp_url = link['href']
+
+    if not dmg_assess.shp_url:
+        return None
+
+    # Pull the top left and bottom right coords and the date
+    for section in dmg_soup.find_all("td"):
+        if "Published" in section.text:
+            dmg_assess.id = re.search(r"(?<=Product ID:\s)\d\d\d\d",
+                                      section.text).group()
+            raw_coords = re.findall(r"\d\d\.\d\d* x \d\d\.\d\d*", section.text)
+            raw_date = re.search(r"\d \w\w\w, \d\d\d\d", section.text).group()
+            break
+
+    dmg_assess.title = dmg_soup.title
+    dmg_assess.top_left_site = raw_coords[0].split(" x ")
+    dmg_assess.bottom_right_site = raw_coords[1].split(" x ")
+    dmg_assess.date_posted = datetime.datetime.strptime(raw_date, "%d %b, $Y")
+
     return None
 
 
-def 
+def parse_shp(shp_path, dmg_assess):
+    '''
+    If shapefile is downloaded, parse it to get crs, bounds, location.
+    '''
+    shape = gpd.read_file(shp_path)
+    dates = set()
+
+    for raw_date in shape.SensorDate.unique():
+        dates.add(datetime.datetime.strptime(raw_date, "%Y-%m-%d"))
+
+    dmg_assess.crs = shape.crs
+    dmg_assess.first_date = min(dates)
+    dmg_assess.last_date = max(dates)
+
+    return None
 
 
+def build_assessments(download=0, count=0, url=STARTING_URL):
+    '''
+    Builds and returns a list of DamageAssessment objects.
+    Inputs:
+        download: whether or not to download shape (.shp) files.
+            0: Do not download (does not get info from .shp)
+            1: Download, get info, then delete
+            2: Download, get info, and store on disk
+        count: number of damage reports returned. count = 0 returns all.
+        url: If a particular damage report is wanted, use this to
+            specify which one with url (of dmg rept page, NOT of .shp).
+    Returns a list of DamageAssessment objects.
+    '''
 
+    return None
+
+
+def download_shp(url):
+    return None
 
 
 def pull_info():
