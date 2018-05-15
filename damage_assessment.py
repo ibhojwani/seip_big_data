@@ -7,10 +7,13 @@ Returns a list of DamageAssessment objects.
 '''
 
 import re
+import zipfile
 import geopandas as gpd
 from requests import get
 from bs4 import BeautifulSoup
 import datetime
+from os import listdir
+from shutil import rmtree
 
 STARTING_URL = "http://www.unitar.org/unosat/maps/SYR"
 
@@ -20,7 +23,7 @@ class DamageAssessment(object):
 
         self.url = url
         self.title = None
-        self.location = None
+        self.location = None  ###
         self.id = None
         self.date_posted = None
         self.first_date = None
@@ -32,8 +35,98 @@ class DamageAssessment(object):
         self.bottom_right_gpd = None
 
         self.shp_url = None
-        self.shp = None
+        self.shp_path = None
+        self.shp_parent = None
         self.crs = None
+
+    def parse_assessment_pages(self):
+        ''' For a given DamageAssessment object, pull coords, date, id,
+            and the shapefile URL.
+            Inputs:
+                url: url to parse
+            Returns None, but modifies self.
+        '''
+        dmg_soup = BeautifulSoup(get(self.url).content, "html.parser")
+
+        # If shapefile isn't on the page, return none
+        for link in dmg_soup.find_all("a"):
+            if "shapefile" in link.text.lower():
+                self.shp_url = link['href']
+
+        if not self.shp_url:
+            return None
+
+        # Pull the top left and bottom right coords and the date
+        for section in dmg_soup.find_all("td"):
+            if "Published" in section.text:
+                self.id = re.search(r"(?<=Product ID:\s)\d\d\d\d",
+                                    section.text).group()
+                raw_coords = re.findall(r"\d\d\.\d\d* x \d\d\.\d\d*",
+                                        section.text)
+                raw_date = re.search(r"\d \w\w\w, \d\d\d\d",
+                                     section.text).group()
+                break
+
+        self.title = dmg_soup.title
+        self.top_left_site = raw_coords[0].split(" x ")
+        self.bottom_right_site = raw_coords[1].split(" x ")
+        self.date_posted = datetime.datetime.strptime(raw_date, "%d %b, %Y")
+
+        return None
+
+    def parse_shp(self):
+        '''
+        If shapefile is downloaded, parse it to get crs, bounds,
+        location.
+        '''
+        shape = gpd.read_file(self.shp_path)
+        dates = set()
+        total_bounds = shape.total_bounds
+        MIN_X = 0
+        MIN_Y = 1
+        MAX_X = 2
+        MAX_Y = 3
+
+        for raw_date in shape.SensorDate.unique():
+            dates.add(datetime.datetime.strptime(raw_date, "%Y-%m-%d"))
+        self.top_left_gpd = (total_bounds[MIN_X], total_bounds[MAX_Y])
+        self.bottom_right_gdp = (total_bounds[MAX_X], total_bounds[MIN_Y])
+        self.crs = shape.crs
+        self.first_date = min(dates)
+        self.last_date = max(dates)
+
+        return None
+
+
+def download_shp(dmg_assess):
+    '''
+    Given a download url, downloads and unzips the shape file.
+    Inputs:
+        url: url of shapefile download
+        dmg_assess: DamageAssessment object to download for
+    Returns None
+    '''
+    item = get(dmg_assess.shp_url)
+    dir_name_zip = "{}.zip".format(dmg_assess.id)
+    dmg_assess.shp_parent = "{}".format(dmg_assess.id)
+
+    # Download shapefile zip
+    with open(dir_name_zip, "wb") as f:
+        for chunk in item.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+
+    # Unzip directory
+    zipped = zipfile.ZipFile(dir_name_zip, "r")
+    zipped.extractall(dmg_assess.shp_parent)
+    zipped.close()
+
+    # Add path to .sph file. shp is 2 folders deep.
+    middle_dir = dmg_assess.shp_parent + "/" + listdir(
+        dmg_assess.shp_parent)[0]
+    for file in listdir(middle_dir):
+        if file.endswith(".shp"):
+            dmg_assess.shp_path = middle_dir + "/" + file
 
 
 def get_assessment_links(soup):
@@ -43,66 +136,13 @@ def get_assessment_links(soup):
     page_links = soup.find_all("a")
     link_list = []
     for link in page_links:
-        if "damage" in link.text.lower():
+        if (link.contents) and ("damage" in link.text.lower()):
             link_list.append(link)
 
     return link_list
 
 
-def parse_assessment_pages(url, dmg_assess):
-    ''' For a given DamageAssessment object, pull coords, date, id, and
-        the shapefile URL.
-        Inputs:
-            url: url to parse
-            dmg_assess: DamageAssessment object to modify
-        Returns None, but modifies dmg_assess.
-    '''
-    dmg_soup = BeautifulSoup(get(url).contents, "html.parser")
-
-    # If shapefile isn't on the page, return none
-    for link in dmg_soup.find_all("a"):
-        if "shapefile" in link.text.lower():
-            dmg_assess.shp_url = link['href']
-
-    if not dmg_assess.shp_url:
-        return None
-
-    # Pull the top left and bottom right coords and the date
-    for section in dmg_soup.find_all("td"):
-        if "Published" in section.text:
-            dmg_assess.id = re.search(r"(?<=Product ID:\s)\d\d\d\d",
-                                      section.text).group()
-            raw_coords = re.findall(r"\d\d\.\d\d* x \d\d\.\d\d*", section.text)
-            raw_date = re.search(r"\d \w\w\w, \d\d\d\d", section.text).group()
-            break
-
-    dmg_assess.title = dmg_soup.title
-    dmg_assess.top_left_site = raw_coords[0].split(" x ")
-    dmg_assess.bottom_right_site = raw_coords[1].split(" x ")
-    dmg_assess.date_posted = datetime.datetime.strptime(raw_date, "%d %b, $Y")
-
-    return None
-
-
-def parse_shp(shp_path, dmg_assess):
-    '''
-    
-    If shapefile is downloaded, parse it to get crs, bounds, location.
-    '''
-    shape = gpd.read_file(shp_path)
-    dates = set()
-
-    for raw_date in shape.SensorDate.unique():
-        dates.add(datetime.datetime.strptime(raw_date, "%Y-%m-%d"))
-
-    dmg_assess.crs = shape.crs
-    dmg_assess.first_date = min(dates)
-    dmg_assess.last_date = max(dates)
-
-    return None
-
-
-def build_assessments(download=0, count=0, url=STARTING_URL):
+def build_assessments(download=0, count=0, url=None, write=True):
     '''
     Builds and returns a list of DamageAssessment objects.
     Inputs:
@@ -115,38 +155,34 @@ def build_assessments(download=0, count=0, url=STARTING_URL):
             specify which one with url (of dmg rept page, NOT of .shp).
     Returns a list of DamageAssessment objects.
     '''
-
-    return None
-
-
-def download_shp(url):
-    return None
-
-
-def pull_info():
-    '''
-    Build a list of dmg report objects w/ coords.
-    '''
-    initial_soup = BeautifulSoup(get(STARTING_URL).content, "html.parser")
-    link_list = initial_soup.find_all("a")
+    assert not (count
+                and url), "If specific assessment url given, count must be 0"
     damage_assessments = []
+    if url:
+        link_list = [url]
+    else:
+        initial_soup = BeautifulSoup(get(STARTING_URL).content, "html.parser")
+        link_list = get_assessment_links(initial_soup)
+        if count:
+            link_list = link_list[:count]
 
-    for lnk in link_list:
-        # Check if damage assessment
-        if lnk.contents and ("damage" in lnk.contents[0].lower()):
-            url = lnk['href']
-            soup = BeautifulSoup(get(url).content, "html.parser")
+    for link in link_list:
+        print(link)
+        # Initialize object
+        dmg_assess = DamageAssessment(link[''])
+        # Pull info from page
+        dmg_assess.parse_assessment_pages()
 
-            # Check that shape file is included on page
-            if re.findall("Shapefile", str(soup.find_all("a"))):
-                dmg_assess = DamageAssessment(soup, url)
+        if not dmg_assess.id:
+            continue
 
-                # If coordinates are listed, add dmg assess to list
-                if dmg_assess.top_left and dmg_assess.bottom_right:
-                    damage_assessments.append(dmg_assess)
+        # Dwnld, parse shp, and delete, depending on 'download' param.
+        if download:
+            download_shp(dmg_assess)
+            dmg_assess.parse_shp()
+            if download == 1:
+                rmtree(dmg_assess.shp_parent)
+
+        damage_assessments.append(dmg_assess)
 
     return damage_assessments
-
-
-if __name__ == "__main__":
-    print(pull_info())

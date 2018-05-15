@@ -1,7 +1,0 @@
-{
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
-    "python.pythonPath": "E:\\python3.6",
-    "python.formatting.provider": "yapf",
-
-}
