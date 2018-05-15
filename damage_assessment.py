@@ -86,6 +86,7 @@ def parse_assessment_pages(url, dmg_assess):
 
 def parse_shp(shp_path, dmg_assess):
     '''
+    
     If shapefile is downloaded, parse it to get crs, bounds, location.
     '''
     shape = gpd.read_file(shp_path)
