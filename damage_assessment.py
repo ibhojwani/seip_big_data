@@ -169,7 +169,7 @@ def build_assessments(download=0, count=0, url=None, write=True):
     for link in link_list:
         print(link)
         # Initialize object
-        dmg_assess = DamageAssessment(link[''])
+        dmg_assess = DamageAssessment(link['href'])
         # Pull info from page
         dmg_assess.parse_assessment_pages()
 
