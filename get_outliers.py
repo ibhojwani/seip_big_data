@@ -50,7 +50,7 @@ class MR_get_outliers(MRJob):
 if __name__ == '__main__':
 
     MEAN_DICT = {}
-    with open('means.csv') as f:
+    with open('centres.csv') as f:
         reader = csv.reader(f, delimiter='\t')
         for row in reader:
             MEAN_DICT[row[0]] = float(row[1])
