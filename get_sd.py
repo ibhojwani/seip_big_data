@@ -4,11 +4,13 @@ import csv
 import numpy as np
 
 
-class MR_get_recommendation(MRJob):
+class MR_get_sd(MRJob):
     """
     Find recommendations for which stellar objects to check.
     """
-    def mapper_0(self, _, line):
+
+
+    def mapper(self, _, line):
         # Parse the CSV line:
         reader = csv.reader([line])
         line_list = next(reader)
@@ -32,40 +34,26 @@ class MR_get_recommendation(MRJob):
                     key = str(sensor1) + "_" + str(sensor2)
 
                     try:
-                        yield key, np.log(float(line_list[sensor1])) - \
+                        val = np.log(float(line_list[sensor1])) - \
                               np.log(float(line_list[sensor2]))
+                        yield key, (val - MEAN_DICT[key])**2
                     except:
                         pass
-            yield "n", 1
 
 
-    def combiner_0(self, label, diff_count):
+    def combiner(self, label, diff_count):
         yield label, sum(diff_count)
 
-    def reducer_0_init(self):
-        self.totals = {}
-
-    def reducer_0(self, label, sum_diff_count):
-        self.totals[label] = sum(sum_diff_count)
-
-
-    def reducer_final_0(self, ):
-        for key, value in self.totals.items():
-            if key != "n":
-                yield key, value / self.totals["n"]
-            else:
-                yield key, value
-
-
-    def steps(self):
-        return [
-            MRStep(mapper=self.mapper_0,
-                   combiner=self.combiner_0,
-                   reducer_init=self.reducer_0_init,
-                   reducer=self.reducer_0,
-                   reducer_final=self.reducer_final_0),
-        ]
+    def reducer(self, label, sum_diff_count):
+        yield label+"_SD", sum(sum_diff_count) / MEAN_DICT['n']
 
 
 if __name__ == '__main__':
-    MR_get_recommendation.run()
+
+    MEAN_DICT = {}
+    with open('means.csv') as f:
+        reader = csv.reader(f, delimiter='\t')
+        for row in reader:
+            MEAN_DICT[row[0]] = float(row[1])
+
+    MR_get_sd.run()
