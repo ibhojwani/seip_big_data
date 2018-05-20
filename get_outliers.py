@@ -36,15 +36,15 @@ class MR_get_outliers(MRJob):
                     try:
                         val = np.log(float(line_list[sensor1])) - \
                               np.log(float(line_list[sensor2]))
-                        if val > 2 * MEAN_DICT[key+"_SD"] + MEAN_DICT[key]:
+                        if val > (2 * MEAN_DICT[key+"_SD"]) + MEAN_DICT[key]:
                             yield objid, val
-                        if val < 2 * MEAN_DICT[key+"_SD"] - MEAN_DICT[key]:
+                        if val < (2 * MEAN_DICT[key+"_SD"]) - MEAN_DICT[key]:
                             yield objid, val
                     except:
                         pass
 
-    def reducer(self, id, val):
-        yield id, None
+    def reducer(self, obj_id, val):
+        yield obj_id, None
 
 
 if __name__ == '__main__':
