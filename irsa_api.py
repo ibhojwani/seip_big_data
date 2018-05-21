@@ -28,8 +28,15 @@ columns = [
 
 def get_data(size, target):
     '''
-    25 = 1.06 mil
-    10 = 400k
+    Downloads point source data from IRSA SEIP database.
+    Rough estimates (size vs rows):
+        size 25 -> 1 mil rows
+        size 20 -> 700k rows
+        size 10 -> 500k rows
+    Inputs:
+        size: int, radius of cone to download
+        target: string, output file
+    Returns None, but writes to output file.
     '''
     assert (size >= 0), "Error: Size must be greater than 0"
     col_query = ",".join(columns)
@@ -64,3 +71,14 @@ def get_data(size, target):
 
     size = result.headers["Content-length"]
     print("Successfully downloaded {} MB".format(int(size)/1000000))
+
+
+def build_boxes(ra, dec, num_divisions=False):
+    '''
+    Builds a list of boxes which cover the whole sky to run queries on.
+    Inputs:
+        ra: float, size of right ascension of each box
+        dec: float, size of declination of each box
+
+    Returns: list of tuples -- (center ra, center dec, width, height)        
+    '''
