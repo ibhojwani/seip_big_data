@@ -1,0 +1,3 @@
+--2018-05-19 21:02:59--  https://irsa.ipac.caltech.edu/TAP/sync?QUERY=SELECT+*+FROM+fp_psc+WHERE+CONTAINS(POINT('J2000',ra,dec),CIRCLE('J2000',66.76957,26.10453,0.01))=1&FORMAT='CSV'
+Resolving irsa.ipac.caltech.edu (irsa.ipac.caltech.edu)... failed: Temporary failure in name resolution.
+wget: unable to resolve host address ‘irsa.ipac.caltech.edu’
