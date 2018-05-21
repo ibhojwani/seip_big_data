@@ -9,8 +9,9 @@ Returns a list of DamageAssessment objects.
 import re
 import zipfile
 import geopandas as gpd
-import datetime
 import os
+from datetime import datetime as dt
+from io import BytesIO
 from copy import deepcopy
 from requests import get
 from bs4 import BeautifulSoup
@@ -30,7 +31,7 @@ class OnlineInfo(object):
         self.bottom_left_site = None
 
         self.shp_url = None
-        self.dir_path
+        self.dir_path = None
 
     def parse_assessment_pages(self):
         ''' For a given DamageAssessment object, pull coords, date, id,
@@ -63,49 +64,38 @@ class OnlineInfo(object):
         self.title = dmg_soup.title
         self.top_left_site = raw_coords[0].split(" x ")
         self.bottom_right_site = raw_coords[1].split(" x ")
-        self.date_posted = datetime.datetime.strptime(raw_date, "%d %b, %Y")
+        self.date_posted = dt.strptime(raw_date, "%d %b, %Y")
 
         return None
 
     def download_shp(self):
         '''
         Given a download url, downloads and unzips the shape file.
+        Inputs:
+            url: url of shapefile download
+            dmg_assess: DamageAssessment object to download for
         Returns None
         '''
-        item = get(self.shp_url)
-        dir_name_zip = "{}.zip".format(self.id)
+        # Unzips file into disk w/o downloading zip onto disk
         self.dir_path = "{}".format(self.id)
-
-        # Download shapefile zip
-        with open(dir_name_zip, "wb") as f:
-            for chunk in item.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
+        request = get(self.shp_url)
+        zipped = zipfile.ZipFile(BytesIO(request.content))
 
         # Unzip directory
-        zipped = zipfile.ZipFile(dir_name_zip, "r")
         zipped.extractall(self.dir_path)
         zipped.close()
 
-        # Add path to .sph file. shp is 2 folders deep.
-        middle_dir = self.dir_path + "/" + os.listdir(
-            self.dir_path)[0]
-        for file in os.listdir(middle_dir):
-            if file.endswith(".shp"):
-                self.dir_path = middle_dir + "/" + file
-
 
 class DamageAssessment(OnlineInfo):
-    def __init__(self, url):
+    def __init__(self, online_info=None):
+        if online_info:
+            self.__dict__ = online_info.__dict__.copy()
         self.location = None
-        self.first_date = None
-        self.last_date = None
-
+        self.dates = []
         self.top_left_gpd = None
         self.bottom_right_gpd = None
 
         self.shp_path = None
-        self.shp_parent = None
         self.crs = None
 
     def parse_shp(self):
@@ -121,13 +111,19 @@ class DamageAssessment(OnlineInfo):
         MAX_X = 2
         MAX_Y = 3
 
-        # for raw_date in shape.SensorDate.unique():
-        # dates.add(datetime.datetime.strptime(raw_date, "%Y-%m-%d"))
+        # In some shapefiles, there are multiple sensor readings. Also
+        # some .shp have different names for the date columns.
+        # This gets the dates, albeit by throwing/handling exceptions.
+        ### COULD PROBABLY BE IMPROVED ###
+        for col in shape.columns:
+            try:
+                dates.add(dt.strptime(shape[col][0], "%Y-%m-%d"))
+            except:
+                continue
+        self.dates = dates
         self.top_left_gpd = (total_bounds[MIN_X], total_bounds[MAX_Y])
         self.bottom_right_gdp = (total_bounds[MAX_X], total_bounds[MIN_Y])
         self.crs = shape.crs
-        # self.first_date = min(dates)
-        # self.last_date = max(dates)
 
         return None
 
@@ -199,6 +195,7 @@ def build_assessments(download=0, count=0, url=None, write=True, assessments=[])
         # Pull info from page
         try:
             # Parses web page for info
+            print("Parsing webpage")
             page_info.parse_assessment_pages()
 
             if not page_info.id:  # If invalid page, skip
@@ -208,15 +205,28 @@ def build_assessments(download=0, count=0, url=None, write=True, assessments=[])
                 continue
 
             # Dwnld, parse shp, and delete, depending on 'download' param.
-            download_shp(page_info)
+            print("downloading")
+            page_info.download_shp()
+            shp_list = []
+            print("finding shp")
+            shp_list = find_shp(page_info.dir_path, shp_list)
 
-            dmg_assess.parse_shp()
-            if download == 1:
-                rmtree(dmg_assess.shp_parent)
+            print('getting info from shp')
+            for shp in shp_list:
+                dmg_assess = DamageAssessment(page_info)
+                dmg_assess.shp_path = shp
+                dmg_assess.parse_shp()
+                assessments.append(dmg_assess)
 
-            assessments.append(dmg_assess)
-        except:
-            print(dmg_assess)
+                if download == 1:
+                    print(deleting)
+                    rmtree(dmg_assess.dir_path)
+                    dmg_assess.dir_path = None
+                    dmg_assess.shp_path = None
+
+        except Exception as e:
+            print(dmg_assess.url)
+            print(e)
             return assessments
 
     return assessments
