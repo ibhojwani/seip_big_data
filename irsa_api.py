@@ -6,7 +6,7 @@ from astroquery.irsa import Irsa
 from xml.etree import ElementTree
 
 # Base query
-BASE = "https://irsa.ipac.caltech.edu/TAP/async?QUERY=SELECT+{}+FROM+{}+WHERE+CONTAINS(POINT('J2000',ra,dec),POLYGON('J2000',{}))=1&FORMAT=CSV&PHASE=RUN"
+BASE = "https://irsa.ipac.caltech.edu/TAP/async?QUERY=SELECT+{}+FROM+{}+WHERE+{}&FORMAT=CSV&PHASE=RUN"
 
 # Columns to pull
 columns = ["ra",
@@ -27,7 +27,7 @@ columns = ["ra",
            ]
 
 
-def get_data(ra_num, dec_num, out_dir, catalog="allwise_p3as_psd", debug=0):
+def get_data(num_bins, min_snr, top_div, out_dir, catalog="allwise_p3as_psd", debug=0):
     '''
     Downloads point source data from IRSA SEIP database.
     Rough estimates (size vs rows):
@@ -42,22 +42,22 @@ def get_data(ra_num, dec_num, out_dir, catalog="allwise_p3as_psd", debug=0):
         debug: int, reduces num queries to given number. 0 includes all.
     Returns None, but writes to files in out_dir.
     '''
-    assert (ra_num > 0) and (dec_num > 0), "Error: Partition count must be > 0"
+    # assert (ra_num > 0) and (dec_num > 0), "Error: Partition count must be > 0"
     col_query = ",".join(columns)
-    poly_list = build_polygons(ra_num, dec_num)
+    where_list = build_snr_bins(num_bins, min_snr, top_div)
     if debug:
-        lower = (len(poly_list) // 2) - (debug // 2)
-        upper = (len(poly_list) // 2) + (debug // 2)
-        poly_list = poly_list[lower:upper]
-    status_list = init_queries(poly_list, catalog)
+        lower = (len(where_list) // 2) - (debug // 2)
+        upper = (len(where_list) // 2) + (debug // 2)
+        where_list = where_list[lower:upper]
+    status_list = init_queries(where_list, catalog)
 
     # Periodically check if query is done
     num_done = 0
-    completion_msgs = ["COMPLETD", "ERROR", "ABORTED"]
+    completion_msgs = ["COMPLETED", "ERROR", "ABORTED"]
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
-    num_queries = len(poly_list)
+    num_queries = len(where_list)
 
     while num_done < num_queries:
         print("Working...")
@@ -65,12 +65,12 @@ def get_data(ra_num, dec_num, out_dir, catalog="allwise_p3as_psd", debug=0):
             # continue if already processed result
             if query[1] in completion_msgs:
                 continue
-
             # Otherwise, dwnld if complete, print if error or aborted
             status = ElementTree.fromstring(get(query[0]).content)[2].text
+            print(status)
             if status == "COMPLETED":
                 result = get(query[0] + "/results/result", stream=True)
-                with open("{}/{}.csv".format(out_dir, str(poly_list[0])), "wb") as f:
+                with open("{}/{}.csv".format(out_dir, str(where_list[i])), "wb") as f:
                     for block in result.iter_content(1024):
                         f.write(block)
                 num_done += 1
@@ -78,19 +78,74 @@ def get_data(ra_num, dec_num, out_dir, catalog="allwise_p3as_psd", debug=0):
                 continue
 
             elif status == "ERROR":
-                print("ERROR with query {}".format(poly_list[i]))
+                print("ERROR with query {}".format(where_list[i]))
                 num_done += 1
                 query[1] = status
                 continue
 
             elif status == "ABORTED":
-                print("ABORTED with query {}".format(poly_list[i]))
+                print("ABORTED with query {}".format(where_list[i]))
                 num_done += 1
                 query[1] = status
                 continue
 
         print("Processed {}/{}".format(num_done, num_queries))
         sleep(4)
+
+
+def build_snr_bins(num_bins, min_snr, top_div):
+    assert top_div >= min_snr, "top_div must be >= min_snr"
+    bin_list = [min_snr]
+    step = round((top_div - min_snr) / (num_bins - 1), 3)
+    for i in range(num_bins - 1):
+        bin_list.append(bin_list[-1] + step)
+
+    channels = ["w1", "w2", "w3", "w4"]
+    where_template = "{}snr>={}+AND+{}snr<{}"
+    where_list = []
+
+    for i, snr in enumerate(bin_list):
+        where = []
+        if i < len(bin_list) - 1:
+            snr_2 = bin_list[i + 1]
+            for channel in channels:
+                where.append(where_template.format(
+                    channel, snr, channel, snr_2))
+        else:
+            for channel in channels:
+                where.append("{}>={}".format(channel, snr))
+
+        where_list.append("+AND+".join(where))
+
+    return where_list
+
+
+def init_queries(where_list, catalog):
+    '''
+    Initializes the queries from IRSA so they can be processed
+    simultaneously.
+    Inputs:
+        bin_list: list of snr partitions
+        catalog: catalog ID to be pulled from
+            ALLWISE ID: allwise_p3as_psd
+            SEIP ID: slphotdr4
+    Returns list of tuples containing url's of query status pages and
+        their most recent status update.
+    '''
+    status_list = []
+
+    for snr in where_list:
+        query = BASE.format("*", catalog, snr)
+        print(query)
+        info_xml_url = get(query, stream=True).url  # It redirects to info XML
+        info_xml = ElementTree.fromstring(get(info_xml_url).content)
+        status = info_xml[2].text
+        status_list.append([info_xml_url, status])
+
+    return status_list
+# ",".join(columns)
+
+############## OBSOLETE BUT KEPT AROUND JUST IN CASE ################
 
 
 def build_polygons(ra_num, dec_num):
@@ -121,34 +176,3 @@ def build_polygons(ra_num, dec_num):
             poly_list.append([bot_left, bot_right, top_left, top_right])
 
     return poly_list
-
-
-def init_queries(poly_list, catalog):
-    '''
-    Initializes the queries from IRSA so they can be processed
-    simultaneously.
-    Inputs:
-        poly_list: List of sky box partitions
-        catalog: catalog ID to be pulled from
-            ALLWISE ID: allwise_p3as_psd
-            SEIP ID: slphotdr4
-    Returns list of tuples containing url's of query status pages and
-        their most recent status update.
-    '''
-    status_list = []
-    replaces = [" ", "(", ")", "[", "]"]
-
-    for poly in poly_list:
-        poly_str = str(poly)
-        for char in replaces:
-            poly_str = poly_str.replace(char, "")
-
-        query = BASE.format("*", catalog, poly_str)
-        print(query)
-        info_xml_url = get(query, stream=True).url  # It redirects to info XML
-        info_xml = ElementTree.fromstring(get(info_xml_url).content)
-        status = info_xml[2].text
-        status_list.append([info_xml_url, status])
-
-    return status_list
-# ",".join(columns)
