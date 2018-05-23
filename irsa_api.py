@@ -9,25 +9,20 @@ from xml.etree import ElementTree
 BASE = "https://irsa.ipac.caltech.edu/TAP/async?QUERY=SELECT+{}+FROM+{}+WHERE+{}&FORMAT=CSV&PHASE=RUN"
 
 # Columns to pull
-columns = ["ra",
+columns = ["designation",
+           "ra",
            "dec",
-           "l",
-           "b",
-           "i1_f_ap1_bf",
-           "i2_f_ap1_bf",
-           "i3_f_ap1_bf",
-           "i4_f_ap1_bf",
-           "m1_f_ap_bf",
-           "i1_snr",
-           "i2_snr",
-           "i3_snr",
-           "i4_snr",
-           "m1_snr",
-           "objid"
-           ]
+           "w1mpro",
+           "w2mpro",
+           "w3mpro",
+           "w4mpro",
+           "w1snr",
+           "w2snr",
+           "w3snr",
+           "w4snr"]
 
 
-def get_data(num_bins, min_snr, top_div, out_dir, catalog="allwise_p3as_psd", debug=0):
+def get_data(num_bins, min_snr, out_dir, catalog="allwise_p3as_psd", debug=0):
     '''
     Downloads point source data from IRSA SEIP database.
     Rough estimates (size vs rows):
@@ -42,9 +37,9 @@ def get_data(num_bins, min_snr, top_div, out_dir, catalog="allwise_p3as_psd", de
         debug: int, reduces num queries to given number. 0 includes all.
     Returns None, but writes to files in out_dir.
     '''
-    # assert (ra_num > 0) and (dec_num > 0), "Error: Partition count must be > 0"
-    col_query = ",".join(columns)
-    where_list = build_snr_bins(num_bins, min_snr, top_div)
+    assert (num_bins > 0) and (
+        min_snr > 0), "Error: Partition count must be > 0"
+    where_list = build_slices(num_bins, min_snr)
     if debug:
         lower = (len(where_list) // 2) - (debug // 2)
         upper = (len(where_list) // 2) + (debug // 2)
@@ -66,13 +61,16 @@ def get_data(num_bins, min_snr, top_div, out_dir, catalog="allwise_p3as_psd", de
             if query[1] in completion_msgs:
                 continue
             # Otherwise, dwnld if complete, print if error or aborted
-            status = ElementTree.fromstring(get(query[0]).content)[2].text
-            print(status)
+            try:
+                status = ElementTree.fromstring(get(query[0]).content)[2].text
+            except:
+                print("Warning... connection dropped")
+                continue
             if status == "COMPLETED":
-                result = get(query[0] + "/results/result", stream=True)
-                with open("{}/{}.csv".format(out_dir, str(where_list[i])), "wb") as f:
-                    for block in result.iter_content(1024):
-                        f.write(block)
+                with get(query[0] + "/results/result", stream=True) as result:
+                    with open("{}/{}.csv".format(out_dir, str(i)), "wb") as f:
+                        for block in result.iter_content(1024):
+                            f.write(block)
                 num_done += 1
                 query[1] = status
                 continue
@@ -90,34 +88,7 @@ def get_data(num_bins, min_snr, top_div, out_dir, catalog="allwise_p3as_psd", de
                 continue
 
         print("Processed {}/{}".format(num_done, num_queries))
-        sleep(4)
-
-
-def build_snr_bins(num_bins, min_snr, top_div):
-    assert top_div >= min_snr, "top_div must be >= min_snr"
-    bin_list = [min_snr]
-    step = round((top_div - min_snr) / (num_bins - 1), 3)
-    for i in range(num_bins - 1):
-        bin_list.append(bin_list[-1] + step)
-
-    channels = ["w1", "w2", "w3", "w4"]
-    where_template = "{}snr>={}+AND+{}snr<{}"
-    where_list = []
-
-    for i, snr in enumerate(bin_list):
-        where = []
-        if i < len(bin_list) - 1:
-            snr_2 = bin_list[i + 1]
-            for channel in channels:
-                where.append(where_template.format(
-                    channel, snr, channel, snr_2))
-        else:
-            for channel in channels:
-                where.append("{}>={}".format(channel, snr))
-
-        where_list.append("+AND+".join(where))
-
-    return where_list
+        sleep(10)
 
 
 def init_queries(where_list, catalog):
@@ -133,22 +104,20 @@ def init_queries(where_list, catalog):
         their most recent status update.
     '''
     status_list = []
+    col_query = ",".join(columns)
 
-    for snr in where_list:
-        query = BASE.format("*", catalog, snr)
+    for where in where_list:
+        query = BASE.format(col_query, catalog, where)
         print(query)
-        info_xml_url = get(query, stream=True).url  # It redirects to info XML
+        info_xml_url = get(query).url  # It redirects to info XML
+        print("hahahaha", info_xml_url)
         info_xml = ElementTree.fromstring(get(info_xml_url).content)
         status = info_xml[2].text
         status_list.append([info_xml_url, status])
-
     return status_list
-# ",".join(columns)
-
-############## OBSOLETE BUT KEPT AROUND JUST IN CASE ################
 
 
-def build_polygons(ra_num, dec_num):
+def build_slices(num_bins, min_snr):
     '''
     Builds a list of boxes which cover the whole sky to run queries on.
     Inputs:
@@ -159,20 +128,26 @@ def build_polygons(ra_num, dec_num):
 
     Ex. ra_div = 10, dec_div = 10 would return 100 boxes, each 36x36 degrees.
     '''
-    poly_list = []
-    # bounds of ra and dec
     RA_BDS = (0, 360)
-    DEC_BDS = (-90, 90)
-    # Get box dimensions
-    ra_size = (RA_BDS[1] - RA_BDS[0]) / ra_num
-    dec_size = (DEC_BDS[1] - DEC_BDS[0]) / dec_num
+    slice_list = [RA_BDS[0]]
+    ra_size = (RA_BDS[1] - RA_BDS[0]) / num_bins
 
-    for d in range(dec_num):
-        for r in range(ra_num):
-            bot_left = (RA_BDS[0] + r * ra_size, DEC_BDS[0] + d * dec_size)
-            bot_right = (bot_left[0] + ra_size, bot_left[1])
-            top_left = (bot_left[0], bot_left[1] + dec_size)
-            top_right = (bot_right[0], bot_right[1] + dec_size)
-            poly_list.append([bot_left, bot_right, top_left, top_right])
+    for r in range(num_bins):
+        slice_list.append(round(slice_list[-1] + ra_size, 3))
+    channels = ["w1", "w2", "w3", "w4"]
+    snr_template = "{}snr>={}"
+    snr_list = []
+    for channel in channels:
+        snr_list.append(snr_template.format(channel, min_snr))
+    snr_query = "+AND+".join(snr_list)
 
-    return poly_list
+    ra_list = []
+    ra_template = "ra>={}+AND+ra<{}"
+    for i, ra in enumerate(slice_list):
+        if i < len(slice_list) - 1:
+            ra_list.append(ra_template.format(ra, slice_list[i + 1]))
+
+    other_constr = "+AND+cc_flags='0000'+AND+"
+    where_list = [snr_query + other_constr + ra_query for ra_query in ra_list]
+
+    return where_list
