@@ -56,6 +56,20 @@ class MR_get_recommendation(MRJob):
             else:
                 yield key, value
 
+    def mapper_1(self, _, line):
+        # Split the line into variables;
+        # Get delta vector from the attributes;
+        # Calculate vector's min and max ranges (error bounds) based on delta vector
+        # Establish bins (based on direction and magnitude)
+        # Put the delta vector to a bin based on delta vector value (not error bounds)
+        # ? Key is object id;
+        # ? Value is a tuple of all its attributes, including min and max ranges.
+        # ? yield key, value tuple
+
+    def combiner_1(self, obj_id, attrib_tuple):
+        #
+
+
 
     def steps(self):
         return [
