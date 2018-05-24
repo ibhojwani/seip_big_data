@@ -23,20 +23,23 @@ columns = ["designation",
            "w4snr"]
 
 
-def get_data(num_bins, min_snr, out_dir, restart=False, catalog="allwise_p3as_psd", debug=0):
+def get_data(num_bins, min_snr, out_dir, restart=False, catalog="allwise_p3as_psd", debug=0, init=0):
     '''
-    Downloads point source data from IRSA SEIP database.
-    Rough estimates (size vs rows):
-        size 25 -> 1 mil rows
-        size 20 -> 700k rows
-        size 10 -> 500k rows
+    Queries IRSA database with requested params. By default, actively 
+    monitors for results and writes results to out_dir, however this can
+    be used to only initialize queries, which is useful for testing as
+    queries can last hours.
     Inputs:
-        ra_num: int, num partitions of right ascension
-        dec_num: int, num partitions of declination
-        catalog: string, IRSA catalog to query from
-        out_dir: string, directory name to save files to
-        debug: int, reduces num queries to given number. 0 includes all.
-    Returns None, but writes to files in out_dir.
+        num_bins: int, num slices to create (36 recommended, 360 fails)
+        min_snr: int, minimum snr in all 4 channels
+        out_dir: str, directory to store data in
+        restart: bool, True if restarting queries in out_dir/restart.csv
+        catalog: str, ident of catalog to search
+        debug: int, debug > 0 means only request subset, len(sub)~debug
+        init: bool, True if only being used to initialize queries. Lets
+            user init queries and then manually start monitoring later.
+    Returns status_list, a list of dicts w/ query text, status page, and
+        current status
     '''
     assert (num_bins > 0) and (
         min_snr > 0), "Error: Partition count must be > 0"
@@ -52,70 +55,22 @@ def get_data(num_bins, min_snr, out_dir, restart=False, catalog="allwise_p3as_ps
 
     # If being used to restart failed queries, do as above but from csv
     else:
-        with open(out_dir + "/" + "restart.csv", "r") as f:
-            dict_list = [{k: v for k, v in row.items()}
-                         for row in csv.DictReader(f, skipinitialspace=True)]
-        query_list = []
-        for status_dict in dict_list:
-            query_list.append(status_dict['query'])
+        query_list = read_log(out_dir, "restart.csv", True)
         status_list = init_queries(query_list, out_dir)
 
-    # Periodically check if query is done
-    num_done = 0
-    num_queries = len(status_list)
-    waiting = "|/-\\"
-    idx = 0
-    restart_list = []
+    if init:
+        return status_list
 
-    while num_done < num_queries:
-        for i, query in enumerate(status_list):
-            idx = processing(idx, num_done, num_queries, waiting)
-
-            # Otherwise, get update on progress
-            try:
-                status = ElementTree.fromstring(
-                    get(query['info']).content)[2].text
-            except:
-                print("Warning... cannot connect. Added to restart list.")
-                query["status"] = status
-                restart_list.append(query)
-                continue
-
-            # If completed, write to file.
-            if status == "COMPLETED":
-                with get(query['info'] + "/results/result", stream=True) as result:
-                    with open("{}/{}.csv".format(out_dir, str(i)), "wb") as f:
-                        for block in result.iter_content(1024):
-                            f.write(block)
-                num_done += 1
-                query["status"] = status
-                continue
-
-            # Deal with error conditions
-            elif status == "ERROR":
-                print("ERROR. Adding to restarts: {}".format(query['info']))
-                num_done += 1
-                query["status"] = status
-                restart_list.append(query)
-                continue
-
-            elif status == "ABORTED":
-                print("ABORTED. Added to restarts: {}".format(query['info']))
-                num_done += 1
-                query["status"] = status
-                restart_list.append(query)
-                continue
-        # for i in range(10):
-        #     idx = processing(idx, num_done, num_queries, waiting)
-        #     sleep(1)
-        sleep(1)
+    restart_list = monitor_queries(out_dir)
 
     create_log(out_dir, "restart.csv", restart_list)
-
     return restart_list
 
 
 def processing(idx, num_done, num_queries, waiting):
+    '''
+    Simple loading animation.
+    '''
     monit = "Monitoring queries {}/{}".format(num_done, num_queries)
     print(monit, waiting[idx % len(waiting)], end="\r")
     return idx + 1
@@ -123,25 +78,19 @@ def processing(idx, num_done, num_queries, waiting):
 
 def init_queries(query_list, out_dir):
     '''
-    Initializes the queries from IRSA so they can be processed
-    simultaneously.
+    Initializes queries. Writes results to log file.
     Inputs:
-        bin_list: list of snr partitions
-        catalog: str, catalog ID to be pulled from
-            ALLWISE ID: allwise_p3as_psd
-            SEIP ID: slphotdr4
+        query_list: list of queries to send
         out_dir: str, directory for log file to go in
-    Returns list of tuples containing url's of query status pages and
-        their most recent status update.
+    Returns list of dicts w/ info on queries (also writes this to log).
+        Dict contains status, url of status page, and query text
     '''
-
     status_list = []
     for query in query_list:
         info_xml_url = get(query).url  # It redirects to info XML
         info_xml = ElementTree.fromstring(get(info_xml_url).content)
-        status = info_xml[2].text
         # Store info page, current status, and query
-        temp_dict = {"info": info_xml_url, "status": status, "query": query}
+        temp_dict = {"info": info_xml_url, "status": "QUEUED", "query": query}
         status_list.append(temp_dict)
 
     create_log(out_dir, "query_log.csv", status_list)
@@ -151,14 +100,14 @@ def init_queries(query_list, out_dir):
 
 def build_queries(num_bins, min_snr, catalog):
     '''
-    Builds a list of boxes which cover the whole sky to run queries on.
+    Builds queries to get data from IRSA. Breaks the sky into a set of
+    vertical strips and searches for objects within the strip with
+    signal to noise ratio above min_snr in all 4 channels.
     Inputs:
-        ra_num: int, num boxes to divide right ascension into
-        dec_num: int, num boxes to divide declination into
-    Returns: list of tuples -- ("J2000", center ra, center dec, width, height).
-        Width and height are in decimal degrees, "J2000" is coord system.
-
-    Ex. ra_div = 10, dec_div = 10 would return 100 boxes, each 36x36 degrees.
+        num_bins: int, num strips to cut sky into
+        min_snr: float, minumum signal to noise ratio in all 4 channels
+        catalog: str, catalog to query
+    Returns list of query strings.
     '''
     # Create ra slices
     RA_BDS = (0, 360)
@@ -194,7 +143,82 @@ def build_queries(num_bins, min_snr, catalog):
     return query_list
 
 
+def monitor_queries(out_dir):
+    '''
+    Monitors queries already being processed, downloading them to file
+    when detected. Allows user to initialize queries and monitor them
+    in separate steps.
+    Inputs:
+        out_dir: str, directory to download to and read query info from
+    Returns list of dicts of failed queries to be restarted, w/ each
+        dict containing status page url, current status, and query text.
+    '''
+    status_list = read_log(out_dir, "query_log.csv", False)
+    done_flags = ["COMPLETED", "ERROR", "ABORTED"]
+    num_done = 0
+    num_queries = len(status_list)
+    waiting = "|/-\\"
+    idx = 0
+    restart_list = []
+
+    while num_done < num_queries:
+        for i, query in enumerate(status_list):
+            idx = processing(idx, num_done, num_queries, waiting)
+
+            # If already done, continue to next
+            if query['status'] in done_flags:
+                continue
+
+            # Otherwise, get update on progress
+            try:
+                status = ElementTree.fromstring(
+                    get(query['info']).content)[2].text
+            except:
+                print("Warning... cannot connect. Added to restart list.")
+                query["status"] = status
+                restart_list.append(query)
+                continue
+
+            # If completed, write to file.
+            if status == "COMPLETED":
+                with get(query['info'] + "/results/result", stream=True) as result:
+                    with open("{}/{}.csv".format(out_dir, query['info'][-7:]), "wb") as f:
+                        for block in result.iter_content(1024):
+                            f.write(block)
+                num_done += 1
+                query["status"] = status
+                continue
+
+            # Deal with error conditions
+            elif status == "ERROR":
+                print("ERROR. Adding to restarts: {}".format(query['info']))
+                num_done += 1
+                query["status"] = status
+                restart_list.append(query)
+                continue
+
+            elif status == "ABORTED":
+                print("ABORTED. Added to restarts: {}".format(query['info']))
+                num_done += 1
+                query["status"] = status
+                restart_list.append(query)
+                continue
+
+        idx = processing(idx, num_done, num_queries, waiting)
+        sleep(1)
+
+    return restart_list
+
+
 def create_log(out_dir, filename, data):
+    '''
+    Helper function to write csv log files.
+    Inputs:
+        out_dir: str, name of output directory
+        filename: str, name of log file to create
+        data: list of dicts with info to write
+    Returns None, but writes to out_dir/filename.csv
+    '''
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
@@ -203,8 +227,43 @@ def create_log(out_dir, filename, data):
     return None
 
 
+def read_log(out_dir, logfile, queries):
+    '''
+    Helper function to read log files generated by create_log().
+    Inputs:
+        out_dir: str, name of directory containing log file
+        filename: str, name of log file to read
+        queries: bool, True if output should be processed only return
+            query text.
+    Returns list of dicts, or list of strings if queries
+    '''
+    with open(out_dir + "/" + logfile, "r") as f:
+        dict_list = [{k: v for k, v in row.items()}
+                     for row in csv.DictReader(f, skipinitialspace=True)]
+    if not queries:
+        return dict_list
+
+    query_list = []
+    for status_dict in dict_list:
+        query_list.append(status_dict['query'])
+    return query_list
+
+
 def main(num_bins, min_snr, out_dir, cat="allwise_p3as_psd", debug=0, restarts=0):
-    restart = get_data(num_bins, min_snr, out_dir, catalog=cat, debug=debug)
+    '''
+    Queries and downloads data from IRSA database with given params.
+    Inputs:
+        num_bins: int, num slices to create (36 recommended, 360 fails)
+        min_snr: int, minimum snr in all 4 channels
+        out_dir: str, directory to store data in
+        cat: str, ident of catalog to search
+        debug: int, debug > 0 means only request subset, len(sub)~debug
+        restarts: int, num times to retry failed queries
+    Returns bool, True if no failed queries by end.
+
+    '''
+    restart = get_data(num_bins, min_snr, out_dir,
+                       catalog=cat, debug=debug)
     if not restart:
         return True
     for i in range(restarts):
