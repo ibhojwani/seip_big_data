@@ -6,48 +6,66 @@ from sys import argv
 
 def get_outliers(datafile, k):
     # Set up Spark context
-    conf = SparkConf()
+    conf = SparkConf().setMaster("local")
     sc = SparkContext(conf=conf)
 
-    # Load and parse sensor data
-    data = prep_data(datafile, sc)
+    try:
+        # Load and parse sensor data
+        data = prep_data(datafile, sc)
 
-    # Builds k-means clusters
-    clusters = KMeans.train(
-        data.map(lambda row: row[-2:]), 2, maxIterations=500)
+        # Builds k-means clusters
+        clusters = KMeans.train(
+            data.map(lambda row: row[-2:]), 2, maxIterations=500)
 
-    # Predict groups for each value, and store as last column in RDD
-    data = data.map(lambda row: row.append(
-        clusters.predict([row[-2], row[-1]])))
+        # Predict groups for each value, and store as last column in RDD
+        data = data.map(lambda row: row.append(
+            clusters.predict([row[-2], row[-1]])))
 
-    # Calc std deviations
-    # TODO optimize this?
-    stdev_l = [data.filter(lambda row: row[-1] == 0).sampleStdev(),
-               data.filter(lambda row: row[-1] == 1).sampleStdev()]
+        # Calc std deviations
+        # TODO optimize this?
+        stdev_l = [data.filter(lambda row: row[-1] == 0).sampleStdev(),
+                   data.filter(lambda row: row[-1] == 1).sampleStdev()]
 
-    # Get outliers
-    data = data.filter(lambda row: get_dist(
-        clusters, row) >= 2 * stdev_l[row[-1]])
+        # Get outliers
+        data = data.filter(lambda row: get_dist(
+            clusters, row) >= 2 * stdev_l[row[-1]])
 
-    sc.stop()
+        sc.stop()
+
+    except:
+        sc.stop()
+        return False
+
     return data
 
 
 def prep_data(path, sc):
     '''
     '''
-    data = sc.textFile(path)
+    data = sc.textFile(path, 16)
 
     # Remove header
     header = data.first()
     data = data.filter(lambda line: line != header)
     # str -> float
-    data = data.map(lambda line: [float(x)
-                                  for i, x in enumerate(line.split(",")) if i])
+    data = data.map(lambda line: str_to_float(line))
+    # Filter rows with None values
+    data = data.filter(lambda line: )
     # Calc color values
     data = data.map(lambda row: get_color(row))
 
     return data
+
+
+def str_to_float(line):
+    split = line.split(",")
+    floats = []
+    for item in split[1:]:
+        if item:
+            floats.append(float(item))
+        else:
+            floats.append(None)
+    return [split[0]] + floats
 
 
 def get_color(row):
@@ -74,7 +92,7 @@ if __name__ == "__main__":
 
 '''
 
-spark-submit --master local[*] cs120/cs123/seip_big_data/outliers.py cs120/cs123/seip_big_data/data/5218562.csv 2
+spark-submit --executor-memory 8G --driver-memory 2G --master local[*] cs120/cs123/seip_big_data/outliers.py cs120/cs123/seip_big_data/data/5218562.csv 2
 
 
 '''
