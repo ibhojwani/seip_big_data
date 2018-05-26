@@ -1,3 +1,20 @@
+'''
+CMSC 12300 Spr 2018
+TBD
+
+This file provides tools to pull from the IRSA databse. While it is
+currently only compatible with the ALLWISE source catalog, the only 
+barrier to this is the 'columns' variable being fixed, rather
+than a parameter. It splits the sky into 'vertical strips,' downloading
+data in chunks between 2 right ascension values, while filtering for
+image confidence, signal to noise (snr), and ALLWISE movement
+estimations.
+
+It is advisable to download in 2 steps, using get_data() and
+monitor_queries() in succession, rather than using the main() function.
+This generally results in fewer errors due to the IRSA API's limits.
+'''
+
 import csv
 import os
 import sys
@@ -11,8 +28,14 @@ BASE = "https://irsa.ipac.caltech.edu/TAP/async?QUERY=SELECT+{}+FROM+{}+WHERE+{}
 
 # Columns to pull
 columns = ["designation",
-           "ra",
-           "dec",
+           "ra_pm",
+           "dec_pm",
+           "sigra_pm",
+           "sigdec_pm",
+           "pmra",
+           "pmdec",
+           "sigpmra",
+           "sigpmdec",
            "w1mpro",
            "w2mpro",
            "w3mpro",
@@ -131,7 +154,8 @@ def build_queries(num_bins, min_snr, catalog):
         if i < len(slice_list) - 1:
             ra_list.append(ra_template.format(ra, slice_list[i + 1]))
 
-    other_constr = "+AND+cc_flags='0000'+AND+"
+    other_constr = "+AND+cc_flags='0000'+AND+ra_pm+IS+NOT+NULL+AND+dec_pm+IS+"\
+        + "NOT+NULL+AND+pmra+IS+NOT+NULL+AND+pmdec+IS+NOT+NULL+AND+"
     where_list = [snr_query + other_constr + ra_query for ra_query in ra_list]
 
     # Put together final queries

@@ -9,18 +9,17 @@ class MR_get_sd(MRJob):
     Find recommendations for which stellar objects to check.
     """
 
-
     def mapper(self, _, line):
         # Parse the CSV line:
         reader = csv.reader([line])
         line_list = next(reader)
         objid = line_list[-1]
 
-        indexes = [4, 5, 6, 7, 8]
+        sensor_idxs = [9, 10, 11, 12]
 
         pairs_list = []
-        for num_1 in indexes:
-            for num_2 in range(num_1 + 1, indexes[-1] + 1):
+        for num_1 in sensor_idxs:
+            for num_2 in range(num_1 + 1, sensor_idxs[-1] + 1):
                 pairs_list.append((num_1, num_2))
 
         # Skip the header row:
@@ -35,11 +34,10 @@ class MR_get_sd(MRJob):
 
                     try:
                         val = np.log(float(line_list[sensor1])) - \
-                              np.log(float(line_list[sensor2]))
+                            np.log(float(line_list[sensor2]))
                         yield key, (val - MEAN_DICT[key])**2
                     except:
                         pass
-
 
     def combiner(self, label, diff_count):
         yield label, sum(diff_count)
