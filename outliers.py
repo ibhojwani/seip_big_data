@@ -116,8 +116,5 @@ if __name__ == "__main__":
 
 
 '''
-
 spark-submit --executor-memory 8G --driver-memory 2G --master local[*] cs120/cs123/seip_big_data/outliers.py cs120/cs123/seip_big_data/data/5218562.csv 2
-
-
 '''
