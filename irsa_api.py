@@ -22,7 +22,7 @@ import pandas as pd
 from time import sleep
 from requests import get
 from xml.etree import ElementTree
-# TODO change name of .csv so restarts can work
+
 # Base query
 BASE = "https://irsa.ipac.caltech.edu/TAP/async?QUERY=SELECT+{}+FROM+{}+WHERE+{}&FORMAT=CSV&PHASE=RUN"
 

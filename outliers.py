@@ -22,6 +22,10 @@ from sys import argv
 from time import sleep
 
 
+# Multiplier for stdev cutoff for outlier classification
+CUTOFF = 4
+
+
 def get_outliers(datafile, k, out_path):
     # Set up Spark context
     conf = SparkConf().setMaster("local")
@@ -47,7 +51,7 @@ def get_outliers(datafile, k, out_path):
         sleep(4)
         # Get outliers
         data = data.filter(lambda row: get_dist(
-            clusters, row) >= 2 * stdev_l[row[-1]])
+            clusters, row) >= CUTOFF * stdev_l[row[-1]])
 
     except:
         sc.stop()
