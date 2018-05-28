@@ -3,7 +3,8 @@ from mrjob.step import MRStep
 from numpy import sqrt, histogram, mean, array
 from numpy.random import randint
 from heapq import heappush, heappop
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import LSQUnivariateSpline
+import numpy as np
 
 def euc_dist(x1, x2, y1, y2, z1, z2, w1, w2):
     ''' This calculates the euclidean distance
@@ -119,11 +120,27 @@ class FindEdgesAndDistance(MRJob):
         counts, edges = histogram(values, BINS, density = True)       
         y = array([0] + list(counts))
         x = array(list(edges))
-        spl = UnivariateSpline(x = x, y = y, k = 4)
-        deltas = spl.derivative().roots()
+        knots = np.linspace(min(x)+(1 * np.std(x)), max(x)-(1 * np.std(x)), 4)
+        #spl = UnivariateSpline(x = x, y = y, k = 4)
+        spl = LSQUnivariateSpline(x = x, y = y, t = knots)
+        d1 = spl.derivative()
+        changes = 0
+        current = None
+        for i in np.linspace(min(x), max(x), TOP_K):
+            if d1(i) > 0:
+                sign = 'positive'
+            if d1(i) < 0:
+                sign = 'negative'
+            if current == None:
+                current = sign
+            elif current != sign:
+                changes += 1
+            if changes == 2
+                break
+        #deltas = spl.derivative().roots()
         try: # sometimes derivatives throw exceptions
-            if deltas[0] < 1:
-                yield objid, (deltas[0])
+            if i < 1:
+                yield objid, (i)
         except:
             pass
 
