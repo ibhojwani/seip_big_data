@@ -120,10 +120,12 @@ class FindEdgesAndDistance(MRJob):
         counts, edges = histogram(values, BINS, density = True)       
         y = array([0] + list(counts))
         x = array(list(edges))
+        # we need to give some approximate knots
         knots = np.linspace(min(x)+(1 * np.std(x)), max(x)-(1 * np.std(x)), 4)
-        #spl = UnivariateSpline(x = x, y = y, k = 4)
-        spl = LSQUnivariateSpline(x = x, y = y, t = knots)
-        d1 = spl.derivative()
+        # calculate the derivates
+        d1 = LSQUnivariateSpline(x = x, y = y, t = knots).derivative()
+        # search through derivates for saddle points
+        # take the second saddle point
         changes = 0
         current = None
         for i in np.linspace(min(x), max(x), TOP_K):
@@ -137,8 +139,7 @@ class FindEdgesAndDistance(MRJob):
                 changes += 1
             if changes == 2
                 break
-        #deltas = spl.derivative().roots()
-        try: # sometimes derivatives throw exceptions
+        try: # sometimes derivatives can throw exceptions
             if i < 1:
                 yield objid, (i)
         except:
