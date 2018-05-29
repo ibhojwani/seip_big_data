@@ -3,10 +3,20 @@ from mrjob.step import MRStep
 from numpy import sqrt, histogram, mean, array
 from numpy.random import randint
 from heapq import heappush, heappop
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import LSQUnivariateSpline
+import numpy as np
 
-# simple euclidean distance in 4d space
 def euc_dist(x1, x2, y1, y2, z1, z2, w1, w2):
+    ''' This calculates the euclidean distance
+    between two points in 4 dimensional space
+    Inputs:
+        - x1,x2 (floats): right ascension of points 1 and 2 ### ISHAAN PLEASE ADD UNITS
+        - y1,y2 (floats): declination of points 1 and 2
+        - z1,z2 (floats): proper motion right ascension
+        - w1,w2 (floats): proper motion declination
+    Outputs:
+        - distance between the points (float) in degrees
+    '''
     z1 = z1 / 3600000 # correct units
     z2 = z2 / 3600000
     w1 = w1 / 3600000
@@ -19,12 +29,46 @@ def euc_dist(x1, x2, y1, y2, z1, z2, w1, w2):
 
 # From heapq docs
 def heapsort(iterable):
+    ''' This is a simple heapsort function
+    Inputs:
+        - iterable (i.e., list)
+    Outputs: 
+        - the same iterable, sorted in ascending order
+    '''
     h = []
     for value in iterable:
         heappush(h, value)
     return h
 
 class FindEdgesAndDistance(MRJob):
+    ''' This class finds a subset of edges and nodes
+    where each edge is the distance between two objects
+    and the node is the object itself. 
+    It implements the following algorithm:
+    i) initialize a node container and container size variable
+    ii) for each line:
+        - add the node to our node list
+        - increment the container size by 1
+        - if the node list is too large:
+           - remove nodes at random until the list is size N * P
+        - if the node list is sufficently full (size N * P)
+          - calculate the distance from this point to all others
+          in the node list
+          - yield the object's id and its distance to each point
+    iii) for each object 
+        - sort the list of edges by distance in ascending order
+        - take the TOP_K edges (the closest TOP_K)
+        - create a density function of the distances from
+        the object
+        - fit a spline function along this density curve
+        - find the first saddle point in this spline, usually
+        a local minimum (derived from examining results)
+        if the first saddle point is less than 1
+         - return the object and its saddle point
+    Interpret the saddle point as the outer boundary of objects
+    of interest in the vicinity of this point. 
+    '''
+
 
     def mapper_init(self):
         self.node_list = [] # (tuple of fields from line)
@@ -62,26 +106,42 @@ class FindEdgesAndDistance(MRJob):
                     dist = euc_dist(x1, x2, y1, y2, z1, z2, w1, w2)
                     if dist != 0: # not interested in self-dist
                         yield objid, (dist, i[0])
+                        #yield i[0], (dist, objid)
 
     def reducer(self, objid, values):
         vals = heapsort(values)
         cutoff = min(TOP_K, len(vals)) # ensure we don't have indexerrors
         vals = vals[:cutoff]
         # Ids are unique
-        distances = [i[0] for i in vals]
-        objects = [i[1] for i in vals]
-        counts, edges = histogram(distances, BINS, density = True)
-        yield objid, (tuple(counts), tuple(edges))
+        yield objid, ([i[0] for i in vals]) # get distances
+
 
     def mapper_2(self, objid, values):
-        counts, edges = values
+        counts, edges = histogram(values, BINS, density = True)       
         y = array([0] + list(counts))
         x = array(list(edges))
-        spl = UnivariateSpline(x = x, y = y, k = 4)
-        deltas = spl.derivative().roots()
-        try:
-            if deltas[0] < 1:
-                yield objid, (deltas[0])
+        # we need to give some approximate knots
+        knots = np.linspace(min(x)+(1 * np.std(x)), max(x)-(1 * np.std(x)), 4)
+        # calculate the derivates
+        d1 = LSQUnivariateSpline(x = x, y = y, t = knots).derivative()
+        # search through derivates for saddle points
+        # take the second saddle point
+        changes = 0
+        current = None
+        for i in np.linspace(min(x), max(x), TOP_K):
+            if d1(i) > 0:
+                sign = 'positive'
+            if d1(i) < 0:
+                sign = 'negative'
+            if current == None:
+                current = sign
+            elif current != sign:
+                changes += 1
+            if changes == 2
+                break
+        try: # sometimes derivatives can throw exceptions
+            if i < 1:
+                yield objid, (i)
         except:
             pass
 
@@ -95,15 +155,11 @@ class FindEdgesAndDistance(MRJob):
         ]
 
 
-
 if __name__ == '__main__':
-    N = 5000 # num. values to keep for comparing, 
+    N = 500 # num. values to keep for comparing, 
     P = 0.5 # factor by which to divide N
     # think of P as the inverse proportion we keep when the list 
     # gets full, i.e., 0.25 -> 75% dropped
-    # it is also the minimum number of points against which
-    # we compare a node in order to create edges
-    TOP_K = 1000 # the number of closest values we take
-    BINS = 40 # number of bins to histogram the points
-    SAMPLE_N = 2 # bandwidth for finding average
+    TOP_K = 250 # the number of closest values we take
+    BINS = 40 # number of bins into which we histogram the points
     FindEdgesAndDistance.run()
