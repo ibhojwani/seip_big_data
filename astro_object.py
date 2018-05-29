@@ -35,3 +35,6 @@ class AstroObject():
     self.w2_snr = raw_vals[14]
     self.w3_snr = raw_vals[15]
     self.w4_snr = raw_vals[16]
+
+    def __repr__():
+        print(self.objid)
