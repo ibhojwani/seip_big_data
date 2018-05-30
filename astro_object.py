@@ -63,5 +63,5 @@ class AstroObject:
         self.w3_snr = line_list[15]
         self.w4_snr = line_list[16]
 
-    def __str__(self):
-        print(self.objid)
+    def __repr__(self):
+        return self.objid
