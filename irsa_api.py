@@ -111,7 +111,7 @@ def init_queries(query_list, out_dir):
     status_list = []
     for query in query_list:
         info_xml_url = get(query).url  # It redirects to info XML
-        info_xml = ElementTree.fromstring(get(info_xml_url).content)
+        # info_xml = ElementTree.fromstring(get(info_xml_url).content)
         # Store info page, current status, and query
         temp_dict = {"info": info_xml_url, "status": "QUEUED", "query": query}
         status_list.append(temp_dict)
