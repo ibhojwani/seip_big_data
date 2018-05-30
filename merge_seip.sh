@@ -1,7 +1,6 @@
 # Argument 1: data directory, Argument 2: output file
 # e.g. bash merge_seip.sh data merged_seip.csv
-# This goes into the data directory, collects the first line
-# assigns it as the header in the outfile, and concatenates
+# assigns the header in the outfile and concatenates
 # all the other files without their headers
 
 echo 'designation,ra_pm,dec_pm,sigra_pm,sigdec_pm,pmra,pmdec,sigpmra,sigpmdec,w1mpro,w2mpro,w3mpro,w4mpro,w1snr,w2snr,w3snr,w4snr' > $2
