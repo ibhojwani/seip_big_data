@@ -24,7 +24,7 @@ class MrBoxAstroObjects(MRJob):
     """
     Sort astro objects into boxes
     """
-    def mapper_init(self):
+    def mapper_init_box(self):
         self.ra_min = 0
         self.ra_max = 360
         self.dec_min = -90
@@ -39,7 +39,7 @@ class MrBoxAstroObjects(MRJob):
         self.dec_bins = np.linspace(start=self.dec_min, stop=self.dec_max,
                                     num=self.num_dec_bins + 1)
 
-    def mapper(self, _, line):
+    def mapper_box(self, _, line):
         # Construct an astro object and push the attributes in:
         astro_obj = AstroObject()
         astro_obj.fill_attributes(line)
@@ -54,10 +54,10 @@ class MrBoxAstroObjects(MRJob):
 
             yield (ra_bounds, dec_bounds), astro_obj
 
-    def combiner(self, bounds, astro_obj):
+    def combiner_box(self, bounds, astro_obj):
         yield bounds, astro_obj
 
-    def reducer(self, bounds, astro_objs):
+    def reducer_box(self, bounds, astro_objs):
         flattened_list = []
         for list_of_objs in astro_objs:
             for obj in list_of_objs:
@@ -66,10 +66,10 @@ class MrBoxAstroObjects(MRJob):
 
     def steps(self):
         return [
-            MRStep(mapper_init=self.mapper_init,
-                   mapper=self.mapper,
-                   combiner=self.combiner,
-                   reducer=self.reducer)
+            MRStep(mapper_init=self.mapper_init_box,
+                   mapper=self.mapper_box,
+                   combiner=self.combiner_box,
+                   reducer=self.reducer_box)
         ]
 
 
