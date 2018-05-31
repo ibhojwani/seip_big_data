@@ -18,6 +18,7 @@ def build_adjacency_matrix(astro_list):
     adjacency_matrix = np.zeros((dimension, dimension))
 
     for one_ind in range(len(astro_list)):
+        astro_1 = AstroObject()
         astro_1 = astro_list[one_ind]
         for two_ind in range(one_ind + 1, len(astro_list)):
             astro_2 = astro_list[two_ind]
@@ -31,10 +32,11 @@ def build_adjacency_matrix(astro_list):
 
 
 # initialize MRJob
-mr_job = MrBoxAstroObjects(args=['-r', 'local', '../data/5218587.csv'])
-with mr_job.make_runner() as runner:
-    runner.run()
-    for line in runner.stream_output():
-        key, value = mr_job.parse_output_line(line)
-        matrix = build_adjacency_matrix(value)
-        print(matrix)
+if __name__ == "__main__":
+    mr_job = MrBoxAstroObjects(args=['-r', 'local', '../data/5218587.csv'])
+    with mr_job.make_runner() as runner:
+        runner.run()
+        for line in runner.stream_output():
+            key, value = mr_job.parse_output_line(line)
+            matrix = build_adjacency_matrix(value)
+            print(matrix)

@@ -45,8 +45,8 @@ class MrBoxAstroObjects(MRJob):
         astr = astro_object.AstroObject(line)
 
         if astr.objid:
-            ra_bin = np.digitize([astr.ra], self.ra_bins)
-            dec_bin = np.digitize([astr.dec], self.dec_bins)
+            ra_bin = int(np.digitize([astr.ra], self.ra_bins)[0])
+            dec_bin = int(np.digitize([astr.dec], self.dec_bins)[0])
 
             yield (ra_bin, dec_bin), astr
 

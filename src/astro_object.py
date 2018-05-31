@@ -7,7 +7,7 @@ from numpy import sqrt
 
 
 class AstroObject:
-    def __init__(self, data_row=None):
+    def __init__(self, data_row=None, dic=None):
         """
         A class for an astronomical object from the ALLWISE catalog.
         Inputs:
@@ -45,6 +45,9 @@ class AstroObject:
         if data_row:
             self.fill_attributes(data_row)
 
+        elif dic:
+            self.from_dict(dic)
+
     def fill_attributes(self, data_row):
         """
         Fill the attributes using a CSV row
@@ -54,25 +57,27 @@ class AstroObject:
         line_list = data_row.split(",")
         if line_list[0] == "designation":
             return None
+        try:
+            self.objid = line_list[0]
 
-        self.objid = line_list[0]
-
-        self.ra = float(line_list[1])
-        self.dec = float(line_list[2])
-        self.ra_uncert = float(line_list[3])
-        self.dec_uncert = float(line_list[4])
-        self.ra_motion = float(line_list[5])
-        self.dec_motion = float(line_list[6])
-        self.ra_motion_uncert = float(line_list[7])
-        self.dec_motion_uncert = float(line_list[8])
-        self.w1 = float(line_list[9])
-        self.w2 = float(line_list[10])
-        self.w3 = float(line_list[11])
-        self.w4 = float(line_list[12])
-        self.w1_snr = float(line_list[13])
-        self.w2_snr = float(line_list[14])
-        self.w3_snr = float(line_list[15])
-        self.w4_snr = float(line_list[16])
+            self.ra = float(line_list[1])
+            self.dec = float(line_list[2])
+            self.ra_uncert = float(line_list[3])
+            self.dec_uncert = float(line_list[4])
+            self.ra_motion = float(line_list[5])
+            self.dec_motion = float(line_list[6])
+            self.ra_motion_uncert = float(line_list[7])
+            self.dec_motion_uncert = float(line_list[8])
+            self.w1 = float(line_list[9])
+            self.w2 = float(line_list[10])
+            self.w3 = float(line_list[11])
+            self.w4 = float(line_list[12])
+            self.w1_snr = float(line_list[13])
+            self.w2_snr = float(line_list[14])
+            self.w3_snr = float(line_list[15])
+            self.w4_snr = float(line_list[16])
+        except:
+            print(line_list)
 
     def euc_dist(self, other):
         ''' This calculates the euclidean distance
@@ -104,6 +109,10 @@ class AstroObject:
         d = (pmdec1 - pmdec2) ** 2
 
         return sqrt(sum([a, b, c, d]))
+
+    def from_dict(self, d):
+        for field in d.keys():
+            setattr(self, field, d[field])
 
     def __repr__(self):
         if self.objid:
