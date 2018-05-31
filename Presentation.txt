@@ -4,26 +4,26 @@
 
 ------------------
 
-### Goals
+### Goals, Approach, Hypotheses
+
+_Goals_
 
 i) Identify notable objects (outliers)
 ii) Locate notable objects within the sky
 iii) Define an area of interest around that object
 
-### Approach 
+_Approach_
 
 Excess infrared light could mean: 
 
 i) Young Stellar Objects
 ii) Active Galactic Nucleii
 iii) Colliding Galaxies
-
-These objects are likely to be interesting
    
-### Hypothesis
+_Hypotheses_
 
-- Notable objects can be identified as extrema in terms of infrared light
-- Some notable objects' are grouped into interesting structures
+i) Notable objects can be identified as extrema in terms of infrared light
+ii) Some notable objects are grouped into interesting structures
 
 ------------------
 
@@ -35,32 +35,29 @@ Wide-field Infrared Survey Explorer (WISE) - a map of the whole sky
 
 Identifies objects, and readings on the energies they emit
 
-Approx. 800m objects (records),  -- GB
+Approx. 800m objects (records),  815 GB
 
 Contains: location (x, y), movement, colour, readings across a number of bands
 
 ----------------------
 
-### Separate Points into Clusters 
-
-Stars which are not their expected colour -> interesting
+### Unexpected Colour -> interesting object 
 
 ![Source: Gorjian et al.](colourcolour.png)
 
 ---------------------
 
-### K-Means Classification
+### Preprocessing with K-Means Classification
 
 Canned K-Means in Spark
 
 Split points into two groups, ~ N w/in themselves
 
-Within each group, take the outliers (> 2 standard deviations from mean)
+W/in each group, take outliers, $x_i$: $x_i \geq \mu \pm 2\sigma$
 
 ------------------
 
-
-### Outliers as Nodes, Distances as Edges  
+### Algorithm 1: Outliers as Nodes, Distances as Edges  
 
 Developed algorithm with parameters N, P, K.
 
@@ -68,7 +65,7 @@ Complexity:
 
 If number of cases < N(P): Does not run
 
-Otherwise:
+Otherwise, approximately:
 $$\left( \sum_{i=1} ^{N - N \times P} (N \times P) + i \right)  \times \frac{size - (N \times P)}{ N \times P} $$
 
 Compare to:
@@ -76,64 +73,28 @@ $$ size^2 $$
 
 ------------------
 
-### Algorithm Details
-
-![Runtime Trials](Runtimes.png)
-
-------------------
-
-### Algorithm Details (Cont'd)
-
-i) initialize a node container and container size variable (Map 1)
-
-
-ii) for each object: (Map 1)
-
-    - add the object to our node list
-
-    - if the node list is too large:
-       remove nodes at random until the list is size N(P):
-
-
-iii) if the node list is sufficently full (size N(P))
-
-      - yield the object's id and distance to each node
-
-iv) for each object (Reduce 1)
-
-    - take K edges (the closest K)
-
-
-v) for each object (Map 2)
-
-	- create a density function of distances from
-    the object
-
-    - fit a spline function along this density curve
-
-    - find the first saddle point in this spline, usually
-    a local minimum
-
-    - if the first saddle point is less than 1
-    return the object and its saddle point
-
-Interpret the saddle point as the outer boundary of objects
-of interest in the vicinity of this point. 
-   
-------------------
-
-
-### Find the Approximate Area of Interest Around Each Point
+### Algorithm 1 Details
 
 
 ![Distance Density with Fitted Spline](DistanceDensitySpline.png)
 
-
 ------------------
+
+### Algorithm 2
+
+Create grids of the entire sky
+
+Create graphs of each grid
+
+Random walks on graph to produce gradient
+
+Watershed algorithm to define dividing lines on gradient
+
+-----------------
 
 ### Approaches and Tools
 
-- Spark
+- Spark (clustering)
 
 - MapReduce (mrjob)
 
@@ -150,8 +111,13 @@ look how fast it would be
 
 ### Challenges
 
-List some challenges
+Problem: Graph algorithms without all data in memory; complexity too great for a fully connected graph
 
+Solution: Running random sample (Algorithm 1)
+
+Problem: Entire sky too large for Algorithm 2
+
+Solution: Grids and streaming processing
 
 ------------------
 
@@ -161,14 +127,95 @@ List some challenges
 Many important results
 
 
+------------------
+
+Appendices and Extras
 
 ------------------
+
+### Algorithm 1 Implementation
+
+i) initialize a node list (Map 1)
+
+ii) for each object: (Map 1)
+
+    - add the object to our node list
+
+    - if the node list is too large:
+       remove nodes at random until the list is size N(P):
+
+iii) if the node list is sufficently full (size N(P))
+
+      - yield the object's id and distance to each node
+
+iv) for each object (Reduce 1)
+
+    - take K edges (the closest K)
+
+---------------------
+
+### Algorithm 1 Implementation (Cont'd)
+
+v) for each object (Map 2)
+
+    - create a density function of distances from
+    the object
+
+    - fit a spline function along this density curve
+
+    - find the first saddle point in this spline, usually
+    a local minimum
+
+    - if the first saddle point is less than 1
+    return the object and its saddle point
+
+Interpret the saddle point as the outer boundary of objects
+of interest in the vicinity of this point. 
+
+------------------
+
+
+### Algorithm 1 Runtime
+
+![Runtime Trials](Runtimes.png)
+
+----------------------
+
+### Algorithm 2 Implementation
+
+Grids:
+
+r x c grids -> bite-sized chunks
+
+Output key: grid id
+
+------------------
+
+### Algorithm 2 Implementation (Cont'd)
+
+Graphs and Random Walks:
+
+Fully connected graphs w/ distance$^{-1}$ as edge weight
+
+Random walks on graph -> gradient of re-visit frequency
+
+------------------
+
+### Algorithm 2 Implementation (Cont'd)
+
+Watershed Algorithm:
+
+Segmentation of the "image" - i.e, gradient
+
+
+------------------
+
 
 ### Code
 
 https://github.com/ibhojwani/seip_big_data
 
-
+   
 ------------------
 
 To do list:
