@@ -48,3 +48,66 @@ with mr_job.make_runner() as runner:
         key, value = mr_job.parse_output_line(line)
         matrix = build_adjacency_matrix(value)
         print(matrix)
+
+def random_walk(adj_mat, start_row, iterations):
+	"""
+	Reference for function: https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
+	
+	Input:
+		- adj_mat: numpy array, probabilities of visting other points
+		- start_row: int, which row/point to start at
+		- iterations: int, number of iterations to do random walk
+	"""
+
+    # create empty matrix to store random walk results
+    dimension = len(adj_mat)
+    random_walk_matrix = np.zeros((dimension, dimension))
+
+    # create array of possible outcomes
+    possible_outcomes = np.arange(adj_mat.shape[0])
+
+    # begin random walk
+    for k in range(iterations):
+    	# begin at pre-defined row 
+        curr_index = start_row
+
+        while True:
+            probs = adj_mat[curr_index] # probability of transitions
+            
+            # sample from probs
+            new_spot_index = np.random.choice(possible_outcomes,p=probs) 
+
+            # increment counts in random_walk_matrix
+            random_walk_matrix[curr_index][new_spot_index] += 1
+            random_walk_matrix[new_spot_index][curr_index] += 1
+
+            # make the new spot index the current index
+            curr_index = new_spot_index
+            
+            # if target is our initial point then stop walking
+            if new_spot_index == start_row: 
+                break
+            
+    return random_walk_matrix
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
