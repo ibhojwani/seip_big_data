@@ -22,20 +22,20 @@ def build_adjacency_matrix(astro_list):
         astro_1 = astro_list[one_ind]
         for two_ind in range(one_ind + 1, len(astro_list)):
             astro_2 = astro_list[two_ind]
-            astro_1.euclid_dist(astro_2
+            dist = astro_1.euclid_dist(astro_2)
 
             # fill adjacency matrix (only fill one side?)
-            adjacency_matrix[one_ind][two_ind]=euclid_dist
-            adjacency_matrix[two_ind][one_ind]=euclid_dist
+            adjacency_matrix[one_ind][two_ind] = dist
+            adjacency_matrix[two_ind][one_ind] = dist
 
     return adjacency_matrix
 
 
 # initialize MRJob
-mr_job=MrBoxAstroObjects(args=['-r', 'local', '5218587.csv'])
+mr_job = MrBoxAstroObjects(args=['-r', 'local', '5218587.csv'])
 with mr_job.make_runner() as runner:
     runner.run()
     for line in runner.stream_output():
-        key, value=mr_job.parse_output_line(line)
-        matrix=build_adjacency_matrix(value)
+        key, value = mr_job.parse_output_line(line)
+        matrix = build_adjacency_matrix(value)
         print(matrix)
