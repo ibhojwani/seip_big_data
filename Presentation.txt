@@ -4,26 +4,26 @@
 
 ------------------
 
-### Goals
+### Goals, Approach, Hypotheses
+
+_Goals_
 
 i) Identify notable objects (outliers)
 ii) Locate notable objects within the sky
 iii) Define an area of interest around that object
 
-### Approach 
+_Approach_
 
 Excess infrared light could mean: 
 
 i) Young Stellar Objects
 ii) Active Galactic Nucleii
 iii) Colliding Galaxies
-
-These objects are likely to be interesting
    
-### Hypothesis
+_Hypotheses_
 
-- Notable objects can be identified as extrema in terms of infrared light
-- Some notable objects are grouped into interesting structures
+i) Notable objects can be identified as extrema in terms of infrared light
+ii) Some notable objects are grouped into interesting structures
 
 ------------------
 
@@ -57,7 +57,6 @@ W/in each group, take outliers, $x_i$: $x_i \geq \mu \pm 2\sigma$
 
 ------------------
 
-
 ### Algorithm 1: Outliers as Nodes, Distances as Edges  
 
 Developed algorithm with parameters N, P, K.
@@ -76,56 +75,8 @@ $$ size^2 $$
 
 ### Algorithm 1 Details
 
-![Runtime Trials](Runtimes.png)
-
-------------------
-
-### Algorithm 1 Details (Cont'd)
-
-i) initialize a node list (Map 1)
-
-ii) for each object: (Map 1)
-
-    - add the object to our node list
-
-    - if the node list is too large:
-       remove nodes at random until the list is size N(P):
-
-iii) if the node list is sufficently full (size N(P))
-
-      - yield the object's id and distance to each node
-
-iv) for each object (Reduce 1)
-
-    - take K edges (the closest K)
-
----------------------
-
-### Algorithm 1 Details (Cont'd)
-
-v) for each object (Map 2)
-
-	- create a density function of distances from
-    the object
-
-    - fit a spline function along this density curve
-
-    - find the first saddle point in this spline, usually
-    a local minimum
-
-    - if the first saddle point is less than 1
-    return the object and its saddle point
-
-Interpret the saddle point as the outer boundary of objects
-of interest in the vicinity of this point. 
-   
-------------------
-
-### Algorithm 1 Details (Cont'd)
-
 
 ![Distance Density with Fitted Spline](DistanceDensitySpline.png)
-
 
 ------------------
 
@@ -139,35 +90,7 @@ Random walks on graph to produce gradient
 
 Watershed algorithm to define dividing lines on gradient
 
-------------------
-
-### Algorithm 2 Details (Cont'd)
-
-Grids:
-
-r x c grids -> bite-sized chunks
-
-Output key: grid id
-
-------------------
-
-### Algorithm 2 Details (Cont'd)
-
-Graphs and Random Walks:
-
-Fully connected graphs w/ distance$^{-1}$ as edge weight
-
-Random walks on graph -> gradient of re-visit frequency
-
-------------------
-
-### Algorithm 2 Details (Cont'd)
-
-Watershed Algorithm:
-
-Segmentation of the "image" - i.e, gradient
-
-------------------
+-----------------
 
 ### Approaches and Tools
 
@@ -196,7 +119,6 @@ Problem: Entire sky too large for Algorithm 2
 
 Solution: Grids and streaming processing
 
-
 ------------------
 
 
@@ -205,14 +127,95 @@ Solution: Grids and streaming processing
 Many important results
 
 
+------------------
+
+Appendices and Extras
 
 ------------------
+
+### Algorithm 1 Implementation
+
+i) initialize a node list (Map 1)
+
+ii) for each object: (Map 1)
+
+    - add the object to our node list
+
+    - if the node list is too large:
+       remove nodes at random until the list is size N(P):
+
+iii) if the node list is sufficently full (size N(P))
+
+      - yield the object's id and distance to each node
+
+iv) for each object (Reduce 1)
+
+    - take K edges (the closest K)
+
+---------------------
+
+### Algorithm 1 Implementation (Cont'd)
+
+v) for each object (Map 2)
+
+    - create a density function of distances from
+    the object
+
+    - fit a spline function along this density curve
+
+    - find the first saddle point in this spline, usually
+    a local minimum
+
+    - if the first saddle point is less than 1
+    return the object and its saddle point
+
+Interpret the saddle point as the outer boundary of objects
+of interest in the vicinity of this point. 
+
+------------------
+
+
+### Algorithm 1 Runtime
+
+![Runtime Trials](Runtimes.png)
+
+----------------------
+
+### Algorithm 2 Implementation
+
+Grids:
+
+r x c grids -> bite-sized chunks
+
+Output key: grid id
+
+------------------
+
+### Algorithm 2 Implementation (Cont'd)
+
+Graphs and Random Walks:
+
+Fully connected graphs w/ distance$^{-1}$ as edge weight
+
+Random walks on graph -> gradient of re-visit frequency
+
+------------------
+
+### Algorithm 2 Implementation (Cont'd)
+
+Watershed Algorithm:
+
+Segmentation of the "image" - i.e, gradient
+
+
+------------------
+
 
 ### Code
 
 https://github.com/ibhojwani/seip_big_data
 
-
+   
 ------------------
 
 To do list:
