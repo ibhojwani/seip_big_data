@@ -9,7 +9,6 @@ from skimage.segmentation import random_walker
 
 def build_adjacency_matrix(astro_list):
     """
-
     :param key:
     :param value:
     :return:
@@ -32,7 +31,7 @@ def build_adjacency_matrix(astro_list):
 
 
 # initialize MRJob
-mr_job = MrBoxAstroObjects(args=['-r', 'local', '5218587.csv'])
+mr_job = MrBoxAstroObjects(args=['-r', 'local', '../data/5218587.csv'])
 with mr_job.make_runner() as runner:
     runner.run()
     for line in runner.stream_output():

@@ -1,5 +1,6 @@
+import astro_object
 from mrjob.job import MRJob
-from astro_object import AstroObject
+from mrjob.step import MRStep
 import numpy as np
 
 
@@ -41,7 +42,7 @@ class MrBoxAstroObjects(MRJob):
 
     def mapper_box(self, _, line):
         # Construct an astro object and push the attributes in:
-        astr = AstroObject(line)
+        astr = astro_object.AstroObject(line)
 
         if astr.objid:
             ra_bin = np.digitize([astr.ra], self.ra_bins)
@@ -54,6 +55,13 @@ class MrBoxAstroObjects(MRJob):
 
     def reducer_box(self, bounds, astr):
         yield bounds, astr
+
+    def steps(self):
+        return [
+            MRStep(mapper_init=self.mapper_init_box,
+                   mapper=self.mapper_box,
+                   reducer=self.reducer_box)
+        ]
 
 
 if __name__ == '__main__':
