@@ -40,6 +40,7 @@ class AstroObject:
 
         self.k_closest = []
         self.bin_id = None
+        self.rand_walk_visits = 0
 
         # If info is provided, initialize
         if data_row:
