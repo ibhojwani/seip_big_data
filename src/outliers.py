@@ -45,10 +45,8 @@ def get_outliers(datafile, k, out_path):
                         [clusters.predict([row[-2], row[-1]])])
         # Calc std deviations
         # TODO optimize this?
-        sleep(4)
         stdev_l = [data.filter(lambda row: row[-1] == 0).map(lambda row: get_dist(clusters, row[-3:])).sampleStdev(),
                    data.filter(lambda row: row[-1] == 1).map(lambda row: get_dist(clusters, row[-3:])).sampleStdev()]
-        sleep(4)
         # Get outliers
         data = data.filter(lambda row: get_dist(
             clusters, row) >= CUTOFF * stdev_l[row[-1]])
