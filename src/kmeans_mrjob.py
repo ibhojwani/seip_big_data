@@ -34,7 +34,7 @@ class KMeansMR(MRJob):
 
             else:
                 # Parses fresh input from file
-                astr.fill_attributes(line)
+                astr.fill_small(line)
                 if astr.w1 and astr.w2 and astr.w3 and astr.w4:
                     color1 = astr.w1 - astr.w2
                     color2 = astr.w3 - astr.w4
