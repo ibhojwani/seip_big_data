@@ -110,7 +110,6 @@ class FindEdgesAndDistance(MRJob):
                     dist = euc_dist(x1, x2, y1, y2, z1, z2, w1, w2)
                     if dist != 0:  # not interested in self-dist
                         yield objid, (dist, i[0])
-                        # yield i[0], (dist, objid)
 
     def reducer(self, objid, values):
         vals = heapsort(values)
@@ -122,7 +121,6 @@ class FindEdgesAndDistance(MRJob):
         # we need to give some approximate knots
         # calculate the derivates
         d1 = UnivariateSpline(x=x, y=y, k = 4).derivative().roots()
-        #print(d1)
         try:
             if min(d1) < 1:
                 yield objid, (min(d1))

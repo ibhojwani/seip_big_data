@@ -7,7 +7,7 @@
 
 
 # create a cluster
-#gcloud dataproc clusters create finding-stars --num-workers 25  --worker-machine-type n1-standard-4 --master-machine-type n1-standard-4
+#gcloud dataproc clusters create star-finder --num-workers 25  --worker-machine-type n1-standard-4 --master-machine-type n1-standard-4
 
 
 # submit spark job - doesn't really work well, need to capture output better
@@ -15,7 +15,7 @@
 
 
 # run algorithm 1
-time python3 src/edgesanddistance.py --cluster-id=finding-stars -r dataproc outlier_points.csv > algo1results.csv
+time python3 edgesanddistance.py -r dataproc outlier_points.csv > algo1results.csv
 
 # run algorithm 2
 
@@ -27,4 +27,4 @@ time python3 src/edgesanddistance.py --cluster-id=finding-stars -r dataproc outl
 
 # delete the cluster
 
-gcloud dataproc clusters delete finding-stars -Y
+#gcloud dataproc clusters delete star-finder -Y
