@@ -20,6 +20,33 @@ import numpy as np
 #             return bin_array[index - 2], upper_edge
 
 
+
+def create_bins(num_ra_bins=360, num_dec_bins=180):
+    RA_MIN = 0
+    RA_MAX = 360
+    DEC_MIN = -90
+    DEC_MAX = 90
+    num_ra_bins = 360
+    num_dec_bins = 360
+
+    # "+1" Because the bins are in between numbers, so (number of bins) is
+    # (number of boundaries - 1)
+    ra_bins = np.linspace(start=RA_MIN, stop=RA_MAX,
+                          num=num_ra_bins + 1)
+    dec_bins = np.linspace(start=DEC_MIN, stop=DEC_MAX,
+                           num=num_dec_bins + 1)
+
+    return ra_bins, dec_bins
+
+
+def sort_bins(ra, dec, ra_bins, dec_bins):
+
+    ra_bin = np.digitize([ra], ra_bins)[0]
+    dec_bin = np.digitize([dec], dec_bins)[0]
+
+    return ra_bin - 1, dec_bin - 1
+
+
 class MrBoxAstroObjects(MRJob):
     """
     Sort astro objects into boxes
@@ -51,32 +78,6 @@ class MrBoxAstroObjects(MRJob):
                    # combiner=combiner_box,
                    reducer=self.reducer_box)
         ]
-
-
-def create_bins(num_ra_bins=360, num_dec_bins=180):
-    RA_MIN = 0
-    RA_MAX = 360
-    DEC_MIN = -90
-    DEC_MAX = 90
-    num_ra_bins = 360
-    num_dec_bins = 360
-
-    # "+1" Because the bins are in between numbers, so (number of bins) is
-    # (number of boundaries - 1)
-    ra_bins = np.linspace(start=RA_MIN, stop=RA_MAX,
-                          num=num_ra_bins + 1)
-    dec_bins = np.linspace(start=DEC_MIN, stop=DEC_MAX,
-                           num=num_dec_bins + 1)
-
-    return ra_bins, dec_bins
-
-
-def sort_bins(ra, dec, ra_bins, dec_bins):
-
-    ra_bin = np.digitize([ra], ra_bins)[0]
-    dec_bin = np.digitize([dec], dec_bins)[0]
-
-    return ra_bin - 1, dec_bin - 1
 
 
 if __name__ == '__main__':
