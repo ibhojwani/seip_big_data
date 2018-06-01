@@ -31,12 +31,13 @@ def create_bins(num_ra_bins=360, num_dec_bins=180):
 
 def sort_bins(ra, dec, ra_bins, dec_bins):
     """
-
-    :param ra:
-    :param dec:
-    :param ra_bins:
-    :param dec_bins:
-    :return:
+	Sorts an astro object in a specific bin based on that astro object's
+	right ascension and declination values.
+    :param ra: float, right ascension
+    :param dec: float, declination
+    :param ra_bins: float
+    :param dec_bins: float
+    :return ra_bin, dec_bin: floats
     """
     ra_bin = int(np.digitize([ra], ra_bins)[0])
     dec_bin = int(np.digitize([dec], dec_bins)[0])
@@ -57,18 +58,26 @@ class MrBoxAstroObjects(MRJob):
         # Construct an astro object and push the attributes in:
         astr = astro_object.AstroObject(line)
 
+        # yield only if there is an astro object
         if astr.objid:
+        	# sort astro object into bins based on ra and dec values
             ra_bin, dec_bin = sort_bins(
                 astr.ra, astr.dec, self.ra_bins, self.dec_bins)
 
             yield (ra_bin, dec_bin), astr
 
     def reducer_box(self, bounds, astr):
+    	# collapse astro objects of same bins together
         yield bounds, astr
 
     def mapper_rand_walk(self, bounds, astr):
+    	# cast dictionary representations of astro objects into actual astro objects
         astro_obj_list = random_walk.recast_astro_objects(astr)
+
+        # compute probabilities for random walk
         prob_matrix = random_walk.build_adjacency_matrix(astro_obj_list)
+
+        # complete random walk for each bin
         rw_astro_list = random_walk.random_walk(prob_matrix,
                                                 start_row=0,
                                                 iterations=5000,
@@ -76,11 +85,14 @@ class MrBoxAstroObjects(MRJob):
         yield bounds, rw_astro_list
 
     def reducer_rand_walk(self, bounds, rw_astro_list):
+    	# flatten list of list of astro objects
         flattened_rw_list = []
         for list_of_objs in rw_astro_list:
+        	# check if the astro object exists
             if list_of_objs:
                 for obj in list_of_objs:
                     flattened_rw_list.append(obj)
+                    
         yield bounds, flattened_rw_list
 
     def steps(self):
