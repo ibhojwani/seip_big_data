@@ -38,8 +38,8 @@ class AstroObject:
         self.w3_snr = None
         self.w4_snr = None
 
-        # Distance to center of cluster, not necessarily used
         self.k_closest = []
+        self.bin_id = None
 
         # If info is provided, initialize
         if data_row:
@@ -114,13 +114,28 @@ class AstroObject:
         for field in d.keys():
             setattr(self, field, d[field])
 
+    def __eq__(self, other):
+        return self.objid == other.objid
+
+    # Unused as of now but might be useful.
+    def __lt__(self, other):
+        if self.bin_id[0] < other.bin_id[0]:
+            return True
+        if self.bin_id[0] == other.bin_id[0]:
+            if self.bin_id[1] < other.bin_id[1]:
+                return True
+        return False
+
+    def __gt__(self, other):
+        if self.bin_id[0] > other.bin_id[0]:
+            return True
+        if self.bin_id[0] == other.bin_id[0]:
+            if self.bin_id[1] > other.bin_id[1]:
+                return True
+        return False
+
     def __repr__(self):
         if self.objid:
             return self.objid
         else:
             return ""
-
-    def __eq__(self, other):
-        if isinstance(self, other.__class__):
-            return self.objid == other.objid
-        return False

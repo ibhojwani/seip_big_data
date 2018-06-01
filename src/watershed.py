@@ -1,9 +1,8 @@
 '''
 '''
-
-
-from numpy import linspace, histogram2d
-from itertools import product
+from numpy import histogram2d, zeros
+import astro_object
+from group_objects import create_bins, sort_bins
 from skimage.filters import try_all_threshold
 from matplotlib import pyplot as plt
 
@@ -17,20 +16,17 @@ def watershed(random_walk, num_bins, ra1, ra2, dec1, dec2):
     Returns: nested list containing lists of AstroObjects in a given
         cluster
     '''
-    ra_bins = linspace(ra1, ra2, num_bins, endpoint=False)
-    dec_bins = linspace(dec1, dec2, num_bins, endpoint=False)
+    NUM_BINS = 45
 
-    ra_list = []
-    dec_list = []
-    weights = []
+    ra_bins, dec_bins = create_bins(
+        num_ra_bins=NUM_BINS, num_dec_bins=NUM_BINS)
+
+    prob_mtrx = zeros(len(ra_bins) - 1, len(dec_bins) - 1)
 
     for obj, prob in random_walk.items():
-        ra_list.append(obj.ra)
-        dec_list.append(obj.dec)
-        weights.append(prob)
+        ra_bin, dec_bin = sort_bins(obj.ra, obj.dec, ra_bins, dec_bins)
+        prob_mtrx[ra_bin][dec_bin] += prob
+        obj.bin_id = (ra_bin, dec_bin)
 
-    hist = histogram2d(ra_list, dec_list, bins=[
-                       ra_bins, dec_bins], weights=weights)
-
-    try_all_threshold(hist)
+    try_all_threshold(prob_mtrx)
     plt.show()

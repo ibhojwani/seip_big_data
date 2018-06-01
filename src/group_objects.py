@@ -26,27 +26,15 @@ class MrBoxAstroObjects(MRJob):
     """
 
     def mapper_init_box(self):
-        self.ra_min = 0
-        self.ra_max = 360
-        self.dec_min = -90
-        self.dec_max = 90
-        self.num_ra_bins = 360
-        self.num_dec_bins = 360
-
-        # "+1" Because the bins are in between numbers, so (number of bins) is
-        # (number of boundaries - 1)
-        self.ra_bins = np.linspace(start=self.ra_min, stop=self.ra_max,
-                                   num=self.num_ra_bins + 1)
-        self.dec_bins = np.linspace(start=self.dec_min, stop=self.dec_max,
-                                    num=self.num_dec_bins + 1)
+        self.ra_bins, self.dec_bins = create_bins()
 
     def mapper_box(self, _, line):
         # Construct an astro object and push the attributes in:
         astr = astro_object.AstroObject(line)
 
         if astr.objid:
-            ra_bin = int(np.digitize([astr.ra], self.ra_bins)[0])
-            dec_bin = int(np.digitize([astr.dec], self.dec_bins)[0])
+            ra_bin, dec_bin = sort_bins(
+                astr.ra, astr.dec, self.ra_bins, self.dec_bins)
 
             yield (ra_bin, dec_bin), astr
 
@@ -60,8 +48,35 @@ class MrBoxAstroObjects(MRJob):
         return [
             MRStep(mapper_init=self.mapper_init_box,
                    mapper=self.mapper_box,
+                   # combiner=combiner_box,
                    reducer=self.reducer_box)
         ]
+
+
+def create_bins(num_ra_bins=360, num_dec_bins=180):
+    RA_MIN = 0
+    RA_MAX = 360
+    DEC_MIN = -90
+    DEC_MAX = 90
+    num_ra_bins = 360
+    num_dec_bins = 360
+
+    # "+1" Because the bins are in between numbers, so (number of bins) is
+    # (number of boundaries - 1)
+    ra_bins = np.linspace(start=RA_MIN, stop=RA_MAX,
+                          num=num_ra_bins + 1)
+    dec_bins = np.linspace(start=DEC_MIN, stop=DEC_MAX,
+                           num=num_dec_bins + 1)
+
+    return ra_bins, dec_bins
+
+
+def sort_bins(ra, dec, ra_bins, dec_bins):
+
+    ra_bin = np.digitize([ra], ra_bins)[0]
+    dec_bin = np.digitize([dec], dec_bins)[0]
+
+    return ra_bin - 1, dec_bin - 1
 
 
 if __name__ == '__main__':
