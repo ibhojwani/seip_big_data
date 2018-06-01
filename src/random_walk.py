@@ -1,11 +1,7 @@
-import csv
 from astro_object import AstroObject
 import numpy as np
-import pandas as pd
-from itertools import combinations
 from group_objects import MrBoxAstroObjects
-from skimage.segmentation import random_walker
-from collections import Counter
+
 
 def recast_astro_objects(astro_list):
     """
@@ -49,7 +45,6 @@ def build_adjacency_matrix(astro_list):
 
     # fill the diagonal with zeroes
     np.fill_diagonal(trans_matrix, val=0)
-
 
     # normalize the transformed matrix across rows
     norm_trans_matrix = row_normalize_matrix(trans_matrix)
@@ -110,10 +105,6 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
         # begin at pre-defined row
         curr_index = start_row
 
-        # Initialize a Counter object keep num of visitations to each
-        # astro object:
-        visits_counter = Counter()
-
         # begin random walk
         for k in range(iterations):
             probs = prob_mat[curr_index]  # probability of transitions
@@ -121,41 +112,14 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
             # sample from probs
             new_spot_index = np.random.choice(possible_outcomes, p=probs)
 
-            # increment counts in random_walk_matrix
-            print("ASTROOBJ ID:")
-            print(astro_objects_list[new_spot_index])
-            print("ASTROOBJ VISITS BEFORE:")
-            print(astro_objects_list[new_spot_index].rand_walk_visits)
-
+            # increment counts in the astro object attribute
             astro_objects_list[new_spot_index].rand_walk_visits += 1
-
-            print("ASTROOBJ VISITS AFTER:")
-            print(astro_objects_list[new_spot_index].rand_walk_visits)
-
-            random_walk_matrix[curr_index][new_spot_index] += 1
-            #random_walk_matrix[new_spot_index][curr_index] += 1
 
             # make the new spot index the current index
             curr_index = new_spot_index
 
         return random_walk_matrix
     return None
-
-#
-# np.random.seed(15)
-# # random_matrix = [np.random.randint(0, 20, (5,5))]
-# # # print(random_matrix)
-# # trans_mat = transform_dist_matrix(random_matrix)
-# # # print( "++++++++" )
-# # # print(trans_mat)
-# # # print( "++++++++" )
-# # normalized_mat = row_normalize_matrix(trans_mat)
-# # print(normalized_mat)
-# # print("++++++++++")
-# # # print(normalized_mat.sum(axis=1))
-# normalized_mat = build_adjacency_matrix(random_matrix)
-# rw_matrix = random_walk(normalized_mat, start_row=0, iterations=100)
-# print(rw_matrix)
 
 
 if __name__ == "__main__":
@@ -169,13 +133,5 @@ if __name__ == "__main__":
             matrix = build_adjacency_matrix(l)
             rw_matrix = random_walk(matrix, start_row=0,
                                     iterations=100, astro_objects_list=l)
-            # print("==================================================")
-            # print("RANDOM WALK MATRIX:")
-            # print(rw_matrix)
-            # print("+++++++++++++++++++++++++")
-            # for astroobj in l:
-            #     print(astroobj.objid)
-            #     print(astroobj.rand_walk_visits)
-            # print("==================================================")
 
 
