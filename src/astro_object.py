@@ -121,7 +121,7 @@ class AstroObject:
     def __lt__(self, other):
         if self.bin_id[0] < other.bin_id[0]:
             return True
-        if self.bin[0] == other.bin_id[0]:
+        if self.bin_id[0] == other.bin_id[0]:
             if self.bin_id[1] < other.bin_id[1]:
                 return True
         return False
@@ -129,7 +129,7 @@ class AstroObject:
     def __gt__(self, other):
         if self.bin_id[0] > other.bin_id[0]:
             return True
-        if self.bin[0] == other.bin_id[0]:
+        if self.bin_id[0] == other.bin_id[0]:
             if self.bin_id[1] > other.bin_id[1]:
                 return True
         return False
