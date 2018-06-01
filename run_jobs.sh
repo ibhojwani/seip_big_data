@@ -1,3 +1,6 @@
+#### USAGE: bash run_jobs.sh [name of your permissions file]
+
+
 # set up environment vars
 export MRJOB_CONF=.mrjob.conf
 
@@ -27,7 +30,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=$1 #
 time python3  src/group_objects.py -r dataproc \
  --cluster-id=star-finder test.csv  > algo2results.csv \
 #--num-core-instances 25  --core-instance-type n1-standard-4 --instance-type n1-standard-4 
---py-file src/astro.zip 
+#--py-file src/astro.zip 
 
 # delete the cluster
 
