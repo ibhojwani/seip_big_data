@@ -90,7 +90,7 @@ def row_normalize_matrix(transformed_matrix):
     return normalized_matrix
 
 
-def random_walk(prob_mat, start_row, iterations, astro_list):
+def random_walk(prob_mat, start_row, iterations, astro_objects_list):
     """
     Reference for function: https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
 
@@ -99,40 +99,47 @@ def random_walk(prob_mat, start_row, iterations, astro_list):
         - start_row: int, which row/point to start at
         - iterations: int, number of iterations to do random walk
     """
-    #if type(prob_mat).__module__ == 'numpy':
-    # create empty matrix to store random walk results
-    dimension = len(prob_mat)
-    random_walk_matrix = np.zeros((dimension, dimension))
+    if type(prob_mat).__module__ == 'numpy':
+        #create empty matrix to store random walk results
+        dimension = len(prob_mat)
+        random_walk_matrix = np.zeros((dimension, dimension))
 
-    # create array of possible outcomes
-    possible_outcomes = np.arange(prob_mat.shape[0])
+        # create array of possible outcomes
+        possible_outcomes = np.arange(prob_mat.shape[0])
 
-    # begin at pre-defined row
-    curr_index = start_row
+        # begin at pre-defined row
+        curr_index = start_row
 
-    # Initialize a Counter object keep num of visitations to each
-    # astro object:
-    visits_counter = Counter()
+        # Initialize a Counter object keep num of visitations to each
+        # astro object:
+        visits_counter = Counter()
 
-    # begin random walk
-    for k in range(iterations):
-        probs = prob_mat[curr_index]  # probability of transitions
+        # begin random walk
+        for k in range(iterations):
+            probs = prob_mat[curr_index]  # probability of transitions
 
-        # sample from probs
-        new_spot_index = np.random.choice(possible_outcomes, p=probs)
+            # sample from probs
+            new_spot_index = np.random.choice(possible_outcomes, p=probs)
 
-        # increment counts in random_walk_matrix
-        print("ASTROOJB ID:")
-        print(astro_list[new_spot_index])
-        #visits_counter[]
-        random_walk_matrix[curr_index][new_spot_index] += 1
-        random_walk_matrix[new_spot_index][curr_index] += 1
+            # increment counts in random_walk_matrix
+            print("ASTROOBJ ID:")
+            print(astro_objects_list[new_spot_index])
+            print("ASTROOBJ VISITS BEFORE:")
+            print(astro_objects_list[new_spot_index].rand_walk_visits)
 
-        # make the new spot index the current index
-        curr_index = new_spot_index
+            astro_objects_list[new_spot_index].rand_walk_visits += 1
 
-    return random_walk_matrix
-    #return None
+            print("ASTROOBJ VISITS AFTER:")
+            print(astro_objects_list[new_spot_index].rand_walk_visits)
+
+            random_walk_matrix[curr_index][new_spot_index] += 1
+            #random_walk_matrix[new_spot_index][curr_index] += 1
+
+            # make the new spot index the current index
+            curr_index = new_spot_index
+
+        return random_walk_matrix
+    return None
 
 #
 # np.random.seed(15)
@@ -160,15 +167,15 @@ if __name__ == "__main__":
             key, value = mr_job.parse_output_line(line)
             l = recast_astro_objects(value)
             matrix = build_adjacency_matrix(l)
-            # print("INPUT MATRIX")
-            # print(matrix)
             rw_matrix = random_walk(matrix, start_row=0,
-                                    iterations=100)
+                                    iterations=100, astro_objects_list=l)
+            # print("==================================================")
             # print("RANDOM WALK MATRIX:")
             # print(rw_matrix)
-            # print("================================================")
-            # print(matrix.sum(axis=1))
-            # new_matrix = calc_matrix(matrix)
-            # print(new_matrix)
-            # print("+++++++++++++++++++++++")
-            # print(new_matrix.sum(axis=1))
+            # print("+++++++++++++++++++++++++")
+            # for astroobj in l:
+            #     print(astroobj.objid)
+            #     print(astroobj.rand_walk_visits)
+            # print("==================================================")
+
+
