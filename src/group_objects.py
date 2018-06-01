@@ -20,7 +20,6 @@ import numpy as np
 #             return bin_array[index - 2], upper_edge
 
 
-
 def create_bins(num_ra_bins=360, num_dec_bins=180):
     RA_MIN = 0
     RA_MAX = 360
@@ -41,8 +40,8 @@ def create_bins(num_ra_bins=360, num_dec_bins=180):
 
 def sort_bins(ra, dec, ra_bins, dec_bins):
 
-    ra_bin = np.digitize([ra], ra_bins)[0]
-    dec_bin = np.digitize([dec], dec_bins)[0]
+    ra_bin = int(np.digitize([ra], ra_bins)[0])
+    dec_bin = int(np.digitize([dec], dec_bins)[0])
 
     return ra_bin - 1, dec_bin - 1
 
