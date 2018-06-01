@@ -80,13 +80,25 @@ $$ size^2 $$
 
 ------------------
 
-### Algorithm 2
+### Algorithm 2: Split Sky, Random Walk, Watershed
+
+-----------------
+
+### Algorithm 2: Part I: Split Sky
 
 Create grids of the entire sky
 
 Create graphs of each grid
 
+-----------------
+
+### Algorithm 2: Part II: Random Walk
+
 Random walks on graph to produce gradient
+
+-----------------
+
+### Algorithm 2: Part III: Watershed
 
 Watershed algorithm to define dividing lines on gradient
 
