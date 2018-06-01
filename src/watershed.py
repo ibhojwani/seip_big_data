@@ -1,6 +1,6 @@
 '''
 '''
-from numpy import histogram2d, zeros
+from numpy import histogram2d, zeros, nonzero
 import astro_object
 from group_objects import create_bins, sort_bins
 from skimage.filters import try_all_threshold
@@ -30,3 +30,4 @@ def watershed(random_walk, num_bins, ra1, ra2, dec1, dec2):
 
     try_all_threshold(prob_mtrx)
     plt.show()
+    # Do analysis and get back a matrix of 1s and 0s
