@@ -115,8 +115,8 @@ class AstroObject:
         for field in d.keys():
             setattr(self, field, d[field])
 
-    def __eq__(self, other):
-        return isinstance(other, AstroObject) and self.objid == other.objid
+    # def __eq__(self, other):
+    #     return self.objid == other.objid
 
     # Unused as of now but might be useful.
     def __lt__(self, other):
