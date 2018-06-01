@@ -4,7 +4,9 @@
 
 ------------------
 
-### Goals, Approach, Hypotheses
+\begin{align*}
+Goals, Approach, Hypotheses
+\end{align*}
 
 _Goals_
 

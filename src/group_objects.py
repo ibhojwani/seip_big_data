@@ -31,8 +31,8 @@ def create_bins(num_ra_bins=360, num_dec_bins=180):
 
 def sort_bins(ra, dec, ra_bins, dec_bins):
     """
-	Sorts an astro object in a specific bin based on that astro object's
-	right ascension and declination values.
+    Sorts an astro object in a specific bin based on that astro object's
+    right ascension and declination values.
     :param ra: float, right ascension
     :param dec: float, declination
     :param ra_bins: float
@@ -60,18 +60,18 @@ class MrBoxAstroObjects(MRJob):
 
         # yield only if there is an astro object
         if astr.objid:
-        	# sort astro object into bins based on ra and dec values
+            # sort astro object into bins based on ra and dec values
             ra_bin, dec_bin = sort_bins(
                 astr.ra, astr.dec, self.ra_bins, self.dec_bins)
 
             yield (ra_bin, dec_bin), astr
 
     def reducer_box(self, bounds, astr):
-    	# collapse astro objects of same bins together
+        # collapse astro objects of same bins together
         yield bounds, astr
 
     def mapper_rand_walk(self, bounds, astr):
-    	# cast dictionary representations of astro objects into actual astro objects
+        # cast dictionary representations of astro objects into actual astro objects
         astro_obj_list = random_walk.recast_astro_objects(astr)
 
         # compute probabilities for random walk
@@ -85,14 +85,14 @@ class MrBoxAstroObjects(MRJob):
         yield bounds, rw_astro_list
 
     def reducer_rand_walk(self, bounds, rw_astro_list):
-    	# flatten list of list of astro objects
+        # flatten list of list of astro objects
         flattened_rw_list = []
         for list_of_objs in rw_astro_list:
-        	# check if the astro object exists
+            # check if the astro object exists
             if list_of_objs:
                 for obj in list_of_objs:
                     flattened_rw_list.append(obj)
-                    
+
         yield bounds, flattened_rw_list
 
     def steps(self):
