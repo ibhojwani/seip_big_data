@@ -4,7 +4,7 @@ from mrjob.step import MRStep
 from numpy import sqrt, histogram, mean, array
 from numpy.random import randint
 from heapq import heappush, heappop
-from scipy.interpolate import LSQUnivariateSpline
+from scipy.interpolate import UnivariateSpline
 import numpy as np
 
 
@@ -116,49 +116,22 @@ class FindEdgesAndDistance(MRJob):
         vals = heapsort(values)
         cutoff = min(TOP_K, len(vals))  # ensure we don't have indexerrors
         vals = vals[:cutoff]
-        # Ids are unique
-        yield objid, ([i[0] for i in vals])  # get distances
-
-    def mapper_2(self, objid, values):
-        counts, edges = histogram(values, BINS, density=True)
+        counts, edges = histogram([i[0] for i in vals], BINS, density=True)
         y = array([0] + list(counts))
-        x = array(list(edges))
+        x = array(list(edges)) # get distances
         # we need to give some approximate knots
-        knots = np.linspace(min(x)+(1 * np.std(x)), max(x)-(1 * np.std(x)), 4)
         # calculate the derivates
-        d1 = LSQUnivariateSpline(x=x, y=y, t=knots).derivative()
-        # search through derivates for saddle points
-        # take the second saddle point
-        changes = 0
-        current = None
-        for i in np.linspace(min(x), max(x), TOP_K):
-            if d1(i) > 0:
-                sign = 'positive'
-            if d1(i) < 0:
-                sign = 'negative'
-            if current == None:
-                current = sign
-            elif current != sign:
-                changes += 1
-            if changes == 2:
-                break
-        try:  # sometimes derivatives can throw exceptions
-            if i < 1:
-                yield objid, (i)
+        d1 = UnivariateSpline(x=x, y=y, k = 4).derivative().roots()
+        #print(d1)
+        try:
+            if min(d1) < 1:
+                yield objid, (min(d1))
         except:
             pass
 
-    def steps(self):
-        return [
-            MRStep(mapper_init=self.mapper_init,
-                   mapper=self.mapper,
-                   reducer=self.reducer),
-            MRStep(mapper=self.mapper_2),
-        ]
-
 
 if __name__ == '__main__':
-    N = 500  # num. values to keep for comparing,
+    N = 1000 # num. values to keep for comparing,
     P = 0.5  # factor by which to divide N
     # think of P as the inverse proportion we keep when the list
     # gets full, i.e., 0.25 -> 75% dropped
