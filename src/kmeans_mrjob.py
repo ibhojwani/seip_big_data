@@ -22,7 +22,8 @@ class KMeansMR(MRJob):
                 color1 = astr.w1 - astr.w2
                 color2 = astr.w3 - astr.w4
 
-        if color1 and color2:
+        # if color1 and color2:
+        if color1 != None:
             closest = (inf, None)
             for i, center in enumerate(centroids):
                 dist = calc_dist(color1, color2, center[0], center[1])
@@ -79,4 +80,10 @@ if __name__ == "__main__":
 
     KMeansMR.run()
 
+    with open("out.txt", "wr") as f:
+        f.write(centroids)
+
     print(centroids)
+
+
+# [(0.06334012588367824, 0.9252034811820414), (0.37139292410934366, 2.9236365472548593)]
