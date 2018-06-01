@@ -40,6 +40,7 @@ class AstroObject:
 
         self.k_closest = []
         self.bin_id = None
+        self.rand_walk_visits = 0
 
         # If info is provided, initialize
         if data_row:
@@ -114,8 +115,8 @@ class AstroObject:
         for field in d.keys():
             setattr(self, field, d[field])
 
-    def __eq__(self, other):
-        return self.objid == other.objid
+    # def __eq__(self, other):
+    #     return self.objid == other.objid
 
     # Unused as of now but might be useful.
     def __lt__(self, other):
@@ -139,3 +140,8 @@ class AstroObject:
             return self.objid
         else:
             return ""
+
+    def __hash__(self):
+        # use the hashcode of self.objid since that is used
+        # for equality checks as well
+        return hash(self.objid)
