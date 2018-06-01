@@ -108,7 +108,6 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
 
         # Copy astro object list:
         astro_objects_list_copy = copy.deepcopy(astro_objects_list)
-        #astro_objects_list_copy = astro_objects_list[:]
 
         # begin random walk
         for k in range(iterations):
@@ -126,24 +125,6 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
         return astro_objects_list_copy
     return None
 
-
-if __name__ == "__main__":
-    # initialize MRJob
-    mr_job = MrBoxAstroObjects(args=['-r', 'local', '5218587.csv'])
-    with mr_job.make_runner() as runner:
-        runner.run()
-        for line in runner.stream_output():
-            key, value = mr_job.parse_output_line(line)
-            l = recast_astro_objects(value)
-            matrix = build_adjacency_matrix(l)
-            rw_astro_list = random_walk(matrix, start_row=0,
-                                    iterations=100, astro_objects_list=l)
-            for i in range(len(l)):
-                print("original object", l[i])
-                print("original object visits", l[i].rand_walk_visits)
-                if rw_astro_list:
-                    print("modified object", rw_astro_list[i])
-                    print("modified object visits", rw_astro_list[i].rand_walk_visits)
 
 
 
