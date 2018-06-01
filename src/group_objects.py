@@ -33,7 +33,8 @@ class MrBoxAstroObjects(MRJob):
         astr = astro_object.AstroObject(line)
 
         if astr.objid:
-            ra_bin, dec_bin = sort_bins(astr, self.ra_bins, self.dec_bins)
+            ra_bin, dec_bin = sort_bins(
+                astr.ra, astr.dec, self.ra_bins, self.dec_bins)
 
             yield (ra_bin, dec_bin), astr
 
@@ -70,12 +71,12 @@ def create_bins(num_ra_bins=360, num_dec_bins=180):
     return ra_bins, dec_bins
 
 
-def sort_bins(astr, ra_bins, dec_bins):
+def sort_bins(ra, dec, ra_bins, dec_bins):
 
-    ra_bin = int(np.digitize([astr.ra], self.ra_bins)[0])
-    dec_bin = int(np.digitize([astr.dec], self.dec_bins)[0])
+    ra_bin = np.digitize([ra], ra_bins)[0]
+    dec_bin = np.digitize([dec], dec_bins)[0]
 
-    return ra_bin, dec_bin
+    return ra_bin - 1, dec_bin - 1
 
 
 if __name__ == '__main__':
