@@ -109,9 +109,6 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
     # Check that probability matrix is a numpy array. It shouldn't be if
     # there were no objects between which to compare distances:
     if type(prob_mat).__module__ == 'numpy':
-        # create empty matrix to store random walk results
-        dimension = len(prob_mat)
-        random_walk_matrix = np.zeros((dimension, dimension))
 
         # create array of possible outcomes
         possible_outcomes = np.arange(prob_mat.shape[0])
@@ -119,7 +116,7 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
         # begin at pre-defined row
         curr_index = start_row
 
-        # Copy astro object list:
+        # Deepcopy astro object list:
         astro_objects_list_copy = copy.deepcopy(astro_objects_list)
 
         # begin random walk
@@ -139,23 +136,24 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
     return None
 
 
-if __name__ == "__main__":
-    # initialize MRJob
-    mr_job = MrBoxAstroObjects(args=['-r', 'local', '5218597.csv'])
-    with mr_job.make_runner() as runner:
-        runner.run()
-        for line in runner.stream_output():
-            key, value = mr_job.parse_output_line(line)
-            l = recast_astro_objects(value)
-            matrix = build_adjacency_matrix(l)
-            rw_astro_list = random_walk(matrix, start_row=0,
-                                    iterations=1000, astro_objects_list=l)
-            # for i in range(len(l)):
-            #     print("original object", l[i])
-            #     print("original object visits", l[i].rand_walk_visits)
-            #     if rw_astro_list:
-            #         print("modified object", rw_astro_list[i])
-            #         print("modified object visits", rw_astro_list[i].rand_walk_visits)
+# Test code
+# if __name__ == "__main__":
+#     # initialize MRJob
+#     mr_job = MrBoxAstroObjects(args=['-r', 'local', '5218597.csv'])
+#     with mr_job.make_runner() as runner:
+#         runner.run()
+#         for line in runner.stream_output():
+#             key, value = mr_job.parse_output_line(line)
+#             l = recast_astro_objects(value)
+#             matrix = build_adjacency_matrix(l)
+#             rw_astro_list = random_walk(matrix, start_row=0,
+#                                     iterations=1000, astro_objects_list=l)
+#             # for i in range(len(l)):
+#             #     print("original object", l[i])
+#             #     print("original object visits", l[i].rand_walk_visits)
+#             #     if rw_astro_list:
+#             #         print("modified object", rw_astro_list[i])
+#             #         print("modified object visits", rw_astro_list[i].rand_walk_visits)
 
 
 

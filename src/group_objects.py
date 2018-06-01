@@ -5,23 +5,13 @@ import numpy as np
 import random_walk
 
 
-# def which_bin(value_to_sort, bin_array):
-#     """
-#     Determines the edges of the bin into which the value falls; inclusive of
-#     upper boundary
-#     :param value_to_sort: float, ra or dec value
-#     :param bin_array: numpy array of dimensions (number of boundaries, )
-#     :return: int, bin index, starting with 1
-#     """
-#     upper_edge = bin_array.max()
-#     for index in range(bin_array.shape[0]):
-#         if value_to_sort < bin_array[index]:
-#             return bin_array[index - 1], bin_array[index]
-#         elif value_to_sort == upper_edge:
-#             return bin_array[index - 2], upper_edge
-
-
 def create_bins(num_ra_bins=360, num_dec_bins=180):
+    """
+    Create equally spaced bins for ra and dec coordinate ranges
+    :param num_ra_bins: integer, how many bins for ra
+    :param num_dec_bins: integer, how many bins for dec
+    :return ra_bins, dec_bins: tuple of numpy arrays with bin boundaries
+    """
     RA_MIN = 0
     RA_MAX = 360
     DEC_MIN = -90
@@ -40,7 +30,14 @@ def create_bins(num_ra_bins=360, num_dec_bins=180):
 
 
 def sort_bins(ra, dec, ra_bins, dec_bins):
+    """
 
+    :param ra:
+    :param dec:
+    :param ra_bins:
+    :param dec_bins:
+    :return:
+    """
     ra_bin = int(np.digitize([ra], ra_bins)[0])
     dec_bin = int(np.digitize([dec], dec_bins)[0])
 
@@ -49,10 +46,11 @@ def sort_bins(ra, dec, ra_bins, dec_bins):
 
 class MrBoxAstroObjects(MRJob):
     """
-    Sort astro objects into boxes
+    Sort astro objects into boxes and random walk within each box
     """
 
     def mapper_init_box(self):
+        # Initialize bins
         self.ra_bins, self.dec_bins = create_bins()
 
     def mapper_box(self, _, line):
@@ -64,9 +62,6 @@ class MrBoxAstroObjects(MRJob):
                 astr.ra, astr.dec, self.ra_bins, self.dec_bins)
 
             yield (ra_bin, dec_bin), astr
-
-    # def combiner_box(self, boounds, astr):
-    #     yield bounds, astr
 
     def reducer_box(self, bounds, astr):
         yield bounds, astr
@@ -92,7 +87,6 @@ class MrBoxAstroObjects(MRJob):
         return [
             MRStep(mapper_init=self.mapper_init_box,
                    mapper=self.mapper_box,
-                   # combiner=combiner_box,
                    reducer=self.reducer_box),
             MRStep(mapper=self.mapper_rand_walk,
                    reducer=self.reducer_rand_walk)
