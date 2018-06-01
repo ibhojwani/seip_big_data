@@ -1,9 +1,12 @@
+#### USAGE: bash run_jobs.sh [name of your permissions file]
+
+
 # set up environment vars
 export MRJOB_CONF=.mrjob.conf
 
 
-# Not the actual name of the variable - make sure you check
-#export GOOGLE_CLOUD_DATAPROC=permission json
+# your permissions json should be here
+export GOOGLE_APPLICATION_CREDENTIALS=$1 # 
 
 
 # create a cluster
@@ -26,10 +29,9 @@ export MRJOB_CONF=.mrjob.conf
 
 time python3  src/group_objects.py -r dataproc \
  --cluster-id=star-finder test.csv  > algo2results.csv \
- #--py-file astro.zip
 #--num-core-instances 25  --core-instance-type n1-standard-4 --instance-type n1-standard-4 
-
+#--py-file src/astro.zip 
 
 # delete the cluster
 
-#gcloud dataproc clusters delete star-finder -Y
+#gcloud dataproc clusters delete star-finder 
