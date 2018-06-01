@@ -20,7 +20,6 @@ import numpy as np
 #             return bin_array[index - 2], upper_edge
 
 
-
 def create_bins(num_ra_bins=360, num_dec_bins=180):
     RA_MIN = 0
     RA_MAX = 360
