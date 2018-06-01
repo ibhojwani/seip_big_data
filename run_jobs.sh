@@ -1,5 +1,5 @@
 # set up environment vars
-#export MRJOB_CONF=.mrjob.conf
+export MRJOB_CONF=.mrjob.conf
 
 
 # Not the actual name of the variable - make sure you check
@@ -15,14 +15,19 @@
 
 
 # run algorithm 1
-time python3 edgesanddistance.py -r dataproc outlier_points.csv > algo1results.csv
+#time python3 src/edgesanddistance.py -r dataproc --cluster-id=star-finder outlier_points.csv > algo1results.csv \
+#--num-core-instances 25  --core-instance-type n1-standard-4 --instance-type n1-standard-4
 
 # run algorithm 2
 
-#time python3  src/group_objects.py -r dataproc test.csv  > algo2results.csv
-#--setup 'sudo apt-get install python3-pip -y' --setup 'pip3 install numpy'\
-# --setup 'pip3 install scipy'\
-# --num-core-instances 25  --core-instance-type n1-standard-4 --instance-type n1-standard-4
+# zip python class files 
+
+#zip astro.zip src/astro_object.py src/random_walk.py
+
+time python3  src/group_objects.py -r dataproc \
+ --cluster-id=star-finder test.csv  > algo2results.csv \
+ #--py-file astro.zip
+#--num-core-instances 25  --core-instance-type n1-standard-4 --instance-type n1-standard-4 
 
 
 # delete the cluster
