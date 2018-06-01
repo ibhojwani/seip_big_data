@@ -1,6 +1,13 @@
+# set up environment vars
+#export MRJOB_CONF=.mrjob.conf
+
+
+# Not the actual name of the variable - make sure you check
+#export GOOGLE_CLOUD_DATAPROC=permission json
+
 
 # create a cluster
-gcloud dataproc clusters create finding-stars --num-workers 25  --worker-machine-type n1-standard-4 --master-machine-type n1-standard-4
+#gcloud dataproc clusters create finding-stars --num-workers 25  --worker-machine-type n1-standard-4 --master-machine-type n1-standard-4
 
 
 # submit spark job - doesn't really work well, need to capture output better
@@ -10,12 +17,14 @@ gcloud dataproc clusters create finding-stars --num-workers 25  --worker-machine
 # run algorithm 1
 time python3 src/edgesanddistance.py --cluster-id=finding-stars -r dataproc outlier_points.csv > algo1results.csv
 
-
 # run algorithm 2
 
-#python3  src/group_objects.py --cluster-id=finding-stars -r gs://astro-data/merged_seip.csv  > algo2results.csv
+#time python3  src/group_objects.py -r dataproc test.csv  > algo2results.csv
+#--setup 'sudo apt-get install python3-pip -y' --setup 'pip3 install numpy'\
+# --setup 'pip3 install scipy'\
+# --num-core-instances 25  --core-instance-type n1-standard-4 --instance-type n1-standard-4
 
 
 # delete the cluster
 
-gcloud dataproc clusters delete finding-stars
+gcloud dataproc clusters delete finding-stars -Y
