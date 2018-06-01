@@ -2,6 +2,7 @@ import astro_object
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import numpy as np
+import random_walk
 
 
 # def which_bin(value_to_sort, bin_array):
@@ -70,12 +71,31 @@ class MrBoxAstroObjects(MRJob):
     def reducer_box(self, bounds, astr):
         yield bounds, astr
 
+    def mapper_rand_walk(self, bounds, astr):
+        astro_obj_list = random_walk.recast_astro_objects(astr)
+        prob_matrix = random_walk.build_adjacency_matrix(astro_obj_list)
+        rw_astro_list = random_walk.random_walk(prob_matrix,
+                                                start_row=0,
+                                                iterations=5000,
+                                                astro_objects_list=astro_obj_list)
+        yield bounds, rw_astro_list
+
+    def reducer_rand_walk(self, bounds, rw_astro_list):
+        flattened_rw_list = []
+        for list_of_objs in rw_astro_list:
+            if list_of_objs:
+                for obj in list_of_objs:
+                    flattened_rw_list.append(obj)
+        yield bounds, flattened_rw_list
+
     def steps(self):
         return [
             MRStep(mapper_init=self.mapper_init_box,
                    mapper=self.mapper_box,
                    # combiner=combiner_box,
-                   reducer=self.reducer_box)
+                   reducer=self.reducer_box),
+            MRStep(mapper=self.mapper_rand_walk,
+                   reducer=self.reducer_rand_walk)
         ]
 
 
