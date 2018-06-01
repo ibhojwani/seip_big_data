@@ -1,6 +1,7 @@
 from astro_object import AstroObject
 import numpy as np
 from group_objects import MrBoxAstroObjects
+import copy
 
 
 def recast_astro_objects(astro_list):
@@ -105,6 +106,10 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
         # begin at pre-defined row
         curr_index = start_row
 
+        # Copy astro object list:
+        astro_objects_list_copy = copy.deepcopy(astro_objects_list)
+        #astro_objects_list_copy = astro_objects_list[:]
+
         # begin random walk
         for k in range(iterations):
             probs = prob_mat[curr_index]  # probability of transitions
@@ -113,12 +118,12 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
             new_spot_index = np.random.choice(possible_outcomes, p=probs)
 
             # increment counts in the astro object attribute
-            astro_objects_list[new_spot_index].rand_walk_visits += 1
+            astro_objects_list_copy[new_spot_index].rand_walk_visits += 1
 
             # make the new spot index the current index
             curr_index = new_spot_index
 
-        return random_walk_matrix
+        return astro_objects_list_copy
     return None
 
 
@@ -131,7 +136,16 @@ if __name__ == "__main__":
             key, value = mr_job.parse_output_line(line)
             l = recast_astro_objects(value)
             matrix = build_adjacency_matrix(l)
-            rw_matrix = random_walk(matrix, start_row=0,
+            rw_astro_list = random_walk(matrix, start_row=0,
                                     iterations=100, astro_objects_list=l)
+            for i in range(len(l)):
+                print("original object", l[i])
+                print("original object visits", l[i].rand_walk_visits)
+                if rw_astro_list:
+                    print("modified object", rw_astro_list[i])
+                    print("modified object visits", rw_astro_list[i].rand_walk_visits)
+
+
+
 
 
