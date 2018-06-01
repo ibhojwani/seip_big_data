@@ -6,9 +6,10 @@ import copy
 
 def recast_astro_objects(astro_list):
     """
-
-    :param astro_list:
-    :return:
+    Take a list of dictionaries with astro objects info and convert to
+    a list of astro objects
+    :param astro_list: list of dictionaries
+    :return l: list of astro objects, with attributes filled in.
     """
     l = []
     for astro_dict in astro_list:
@@ -21,12 +22,17 @@ def recast_astro_objects(astro_list):
 
 def build_adjacency_matrix(astro_list):
     """
-    :param key:
-    :param value:
-    :return:
+    Build a matrix of probabilities for random walk. Each value at location
+    i, j is a probability of moving from i'th object to j'th object and
+    vice-versa
+    :param astro_list: list of astro objects
+    :return norm_trans_matrix: numpy array, probability matrix, with rows adding
+    to 1
     """
+    # If the list has 0 or 1 object, no travel between objects is possible:
     if len(astro_list) <= 1:
         return None
+
     # create empty adjacency matrix
     dimension = len(astro_list)
     adjacency_matrix = np.zeros((dimension, dimension))
@@ -55,20 +61,21 @@ def build_adjacency_matrix(astro_list):
 
 def transform_dist_matrix(dist_adj_mat):
     """
-
-    :param dist_adj_mat:
-    :return:
+    Helper function, transforms a matrix of distances to a matrix of trans-
+    formed distances. Each distance is transformed with function transform_distance
+    :param dist_adj_mat: numpy array, matrix of distances between objects
+    :return func(dist_adj_mat): numpy array, matrix of transformed distances
     """
     func = np.vectorize(transform_distance)
-
     return func(dist_adj_mat)
 
 
 def transform_distance(distance):
     """
-
-    :param mat_row:
-    :return:
+    Transform a distance into a measure that recallibrates the distance to
+    give higher values to closer objects
+    :param distance: float
+    :return transformed_dist: float
     """
     transformed_dist = 1 / (1 + distance)
 
@@ -77,10 +84,11 @@ def transform_distance(distance):
 
 def row_normalize_matrix(transformed_matrix):
     """
-
-    :return:
+    Normalize values in a matrix across rows; i.e. rows add to one
+    :param transformed_matrix: numpy array, matrix of values to normalize
+    :return normalized_matrix: numpy array, normalized matrix
     """
-    row_sums = transformed_matrix.sum(axis=1)
+    row_sums = transformed_matrix.sum(axis=1)  # Across rows normalization
     normalized_matrix = transformed_matrix / row_sums[:, np.newaxis]
 
     return normalized_matrix
@@ -88,15 +96,20 @@ def row_normalize_matrix(transformed_matrix):
 
 def random_walk(prob_mat, start_row, iterations, astro_objects_list):
     """
-    Reference for function: https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
+    Reference for function:
+    https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
 
-    Input:
-        - prob_mat: numpy array, probabilities of visting other points
-        - start_row: int, which row/point to start at
-        - iterations: int, number of iterations to do random walk
+    :param prob_mat: numpy array, probabilities of visting other points
+    :param start_row: int, which row/point to start at
+    :param iterations: int, number of iterations to do random walk
+    :param astro_objects_list: list of astro objects
+    :return astro_objects_list_copy or None: list of astro objects, with
+    visitation counts updated (None if bad probability matrix input)
     """
+    # Check that probability matrix is a numpy array. It shouldn't be if
+    # there were no objects between which to compare distances:
     if type(prob_mat).__module__ == 'numpy':
-        #create empty matrix to store random walk results
+        # create empty matrix to store random walk results
         dimension = len(prob_mat)
         random_walk_matrix = np.zeros((dimension, dimension))
 
