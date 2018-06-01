@@ -115,7 +115,7 @@ class AstroObject:
             setattr(self, field, d[field])
 
     def __eq__(self, other):
-        return self.objid == other.objid
+        return isinstance(other, AstroObject) and self.objid == other.objid
 
     # Unused as of now but might be useful.
     def __lt__(self, other):
@@ -139,3 +139,8 @@ class AstroObject:
             return self.objid
         else:
             return ""
+
+    def __hash__(self):
+        # use the hashcode of self.objid since that is used
+        # for equality checks as well
+        return hash(self.objid)
