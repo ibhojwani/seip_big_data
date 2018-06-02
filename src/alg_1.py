@@ -1,5 +1,5 @@
 
-import util_1
+import alg_1_util
 from astro_object import AstroObject
 
 from mrjob.job import MRJob
@@ -29,7 +29,7 @@ class MRTask1(MRJob):
         Because it is needed in multiple places, we think this tradeoff
         is worth it. We may be wrong.
         '''
-        centroid, values = util_1.map_kmeans(line, centroids)
+        centroid, values = alg_1_util.map_kmeans(line, centroids)
         if values != centroid != None:
             yield centroid, values
 
@@ -96,11 +96,11 @@ class MRTask1(MRJob):
 
     def mapper_clust(self, center, values):
         mod_std = stdev[str(center)] * std_cutoff
-        yield from util_1.map_clust(values, mod_std, max_len, len_mult,
-                                    self.node_list)
+        yield from alg_1_util.map_clust(values, mod_std, max_len, len_mult,
+                                        self.node_list)
 
     def combiner_clust(self, astr, values):
-        yield from util_1.comb_clust(astr, values, TOP_K, BINS)
+        yield from alg_1_util.comb_clust(astr, values, TOP_K, BINS)
 
     def reducer_clust(self, _, astr_gen):
         for astr in astr_gen:
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     iterations = 1
     centroids = [(0, 0), (0.6, 4)]  # Approx location of centroids
     centroids_old = centroids.copy()
-    std_cutoff = 2
+    std_cutoff = 3.5
     stdev = {}
     means = {}
 
