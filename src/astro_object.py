@@ -1,9 +1,6 @@
-import csv
-import json
-
-'''
-'''
-
+"""
+Astro-object class.
+"""
 from numpy import sqrt
 
 
@@ -124,14 +121,15 @@ class AstroObject:
         return a + b
 
     def euc_dist_4d(self, other):
-        ''' This calculates the euclidean distance
+        """
+        This calculates the euclidean distance
         between two objects in 4 dimensional space (ra, dec, ra motion,
         dec motion)
         Inputs:
             other: AstroObject to comapre to.
         Outputs:
             - distance between the points (float) in degrees
-        '''
+        """
         MAS_TO_DEG = 1 / 3600000  # Conversion from millisecond to degree
 
         ra1 = self.ra
@@ -157,13 +155,6 @@ class AstroObject:
     def from_dict(self, d):
         for field in d.keys():
             setattr(self, field, d[field])
-
-    # def __eq__(self, other):
-    #     return self.objid == other.objid
-
-    # def toJSON(self):
-    #     return json.dumps(self, default=lambda o: o.__dict__,
-    #                       sort_keys=False, indent=4)
 
     # Unused as of now but might be useful.
     def __lt__(self, other):

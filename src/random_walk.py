@@ -1,7 +1,9 @@
+"""
+Functions for Random Walks. Used in group_objects.py MRJob implementation.
+"""
 from astro_object import AstroObject
 import numpy as np
-#from group_objects import MrBoxAstroObjects
-import copy
+import copy  # For deep copying a list of Astro Objects
 
 
 def recast_astro_objects(astro_list):
@@ -142,30 +144,6 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
         return astro_objects_list_copy
     return None
 
-
-#Test code
-if __name__ == "__main__":
-    # initialize MRJob
-    mr_job = MrBoxAstroObjects(args=['-r', 'local', '5218597.csv'])
-    with mr_job.make_runner() as runner:
-        runner.run()
-        for line in runner.stream_output():
-            key, value = mr_job.parse_output_line(line)
-            print(key, value)
-            # # l = recast_astro_objects(value)
-            # matrix = build_adjacency_matrix(value)
-            # #print("+++++++++++++++++")
-            # #print(matrix)
-            # rw_astro_list = random_walk(matrix, start_row=0,
-            #                             iterations=1000, astro_objects_list=value)
-            # print(rw_astro_list)
-            # print("??????????????????")
-            # for i in range(len(value)):
-            #     print("original object", value[i])
-            #     print("original object visits", value[i].rand_walk_visits)
-            #     if rw_astro_list:
-            #         print("modified object", rw_astro_list[i])
-            #         print("modified object visits", rw_astro_list[i].rand_walk_visits)
 
 
 

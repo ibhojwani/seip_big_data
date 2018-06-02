@@ -1,13 +1,15 @@
+"""
+Algorithm II Implemenation.
+"""
 import astro_object
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import mrjob
 import numpy as np
 import random_walk
-#import pickle
 
 
-def create_bins(num_ra_bins=360, num_dec_bins=180):
+def create_bins(num_ra_bins=360, num_dec_bins=360):
     """
     Create equally spaced bins for ra and dec coordinate ranges
     :param num_ra_bins: integer, how many bins for ra
@@ -18,8 +20,8 @@ def create_bins(num_ra_bins=360, num_dec_bins=180):
     RA_MAX = 360
     DEC_MIN = -90
     DEC_MAX = 90
-    num_ra_bins = 360
-    num_dec_bins = 360
+    num_ra_bins = num_ra_bins
+    num_dec_bins = num_dec_bins
 
     # "+1" Because the bins are in between numbers, so (number of bins) is
     # (number of boundaries - 1)
@@ -88,17 +90,7 @@ class MrBoxAstroObjects(MRJob):
                 flat_astr_list.append(astro_obj)
         yield bounds, flat_astr_list
 
-    # def reducer_box(self, bounds, astr):
-    #     # collapse astro objects of same bins together
-    #     astr_list = []
-    #     for astr_obj in astr:
-    #         astr_list.append(astr_obj)
-    #     yield bounds, astr_list
-
     def mapper_rand_walk(self, bounds, flat_astr_list):
-        # cast dictionary representations of astro objects into actual astro objects
-        #astro_obj_list = random_walk.recast_astro_objects(flat_astr_list)
-
         # compute probabilities for random walk
         prob_matrix = random_walk.build_adjacency_matrix(flat_astr_list)
 

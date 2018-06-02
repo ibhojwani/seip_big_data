@@ -1,4 +1,6 @@
-
+"""
+Algorithm I Implementation.
+"""
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 from numpy import sqrt, histogram, mean, array
