@@ -7,7 +7,7 @@ from numpy import sqrt
 
 
 class AstroObject:
-    def __init__(self, data_row=None, dic=None):
+    def __init__(self, data_row=None, small=False, dic=None):
         """
         A class for an astronomical object from the ALLWISE catalog.
         Inputs:
@@ -37,9 +37,12 @@ class AstroObject:
         self.w2_snr = None
         self.w3_snr = None
         self.w4_snr = None
+        self.color1 = None
+        self.color2 = None
 
         self.k_closest = []
         self.bin_id = None
+        self.dist_from_center = None
         self.rand_walk_visits = 0
 
         # If info is provided, initialize
@@ -47,7 +50,10 @@ class AstroObject:
             self.fill_attributes(data_row)
 
         elif dic:
-            self.from_dict(dic)
+            if small:
+                self.fill_small(dic)
+            else:
+                self.from_dict(dic)
 
     def fill_attributes(self, data_row):
         """
@@ -77,10 +83,46 @@ class AstroObject:
             self.w2_snr = float(line_list[14])
             self.w3_snr = float(line_list[15])
             self.w4_snr = float(line_list[16])
+            self.color1 = self.w1 - self.w2
+            self.color2 = self.w3 - self.w4
         except:
             print(line_list)
 
-    def euc_dist(self, other):
+    def fill_small(self, line_list):
+        self.objid = line_list[0]
+        self.ra = float(line_list[1])
+        self.dec = float(line_list[2])
+        self.ra_motion = float(line_list[5])
+        self.dec_motion = float(line_list[6])
+        self.w1 = float(line_list[9])
+        self.w2 = float(line_list[10])
+        self.w3 = float(line_list[11])
+        self.w4 = float(line_list[12])
+
+    def package_small(self):
+        to_add = ["ra", "dec", "objid", "ra_motion",
+                  "dec_motion", "w1", "w2", "w3", "w4"]
+        d = self.__dict__
+        rv = {}
+        for field in to_add:
+            rv[field] = d[field]
+
+        return rv
+
+    @staticmethod
+    def sq_euc_2d(x1, y1, x2, y2):
+        '''
+        Calculates squared euclid distance in 2 dimensions.
+        Inputs:
+            x1, y1: float, coords of object 1
+            x2, y2: float, coords of object 2
+        '''
+        a = (x1 - x2)**2
+        b = (y1 - y2)**2
+
+        return a + b
+
+    def euc_dist_4d(self, other):
         ''' This calculates the euclidean distance
         between two objects in 4 dimensional space (ra, dec, ra motion,
         dec motion)
