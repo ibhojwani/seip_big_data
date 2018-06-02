@@ -108,3 +108,4 @@ venv.bak/
 
 # working dir
 data/
+results/
