@@ -7,7 +7,7 @@ from numpy import sqrt
 
 
 class AstroObject:
-    def __init__(self, data_row=None, small=False, dic=None):
+    def __init__(self, data_row=None, small=False, dic=False):
         """
         A class for an astronomical object from the ALLWISE catalog.
         Inputs:
@@ -19,26 +19,26 @@ class AstroObject:
         # Positions and uncertainty
         self.ra = None
         self.dec = None
-        self.ra_uncert = None
-        self.dec_uncert = None
-
         # Motions and uncertainty
         self.ra_motion = None
         self.dec_motion = None
-        self.ra_motion_uncert = None
-        self.dec_motion_uncert = None
-
         # Magnitudes in different bands, with signal to noise ratio (snr)
         self.w1 = None
         self.w2 = None
         self.w3 = None
         self.w4 = None
-        self.w1_snr = None
-        self.w2_snr = None
-        self.w3_snr = None
-        self.w4_snr = None
         self.color1 = None
         self.color2 = None
+
+        if not small:
+            self.ra_uncert = None
+            self.dec_uncert = None
+            self.ra_motion_uncert = None
+            self.dec_motion_uncert = None
+            self.w1_snr = None
+            self.w2_snr = None
+            self.w3_snr = None
+            self.w4_snr = None
 
         self.k_closest = []
         self.bin_id = None
@@ -47,21 +47,22 @@ class AstroObject:
 
         # If info is provided, initialize
         if data_row:
-            self.fill_attributes(data_row)
+            if dic:
+                self.from_dict(data_row)
+            else:
+                self.fill_attributes(data_row)
 
         elif dic:
-            if small:
-                self.fill_small(dic)
-            else:
-                self.from_dict(dic)
+            raise Exception("Must provide data_row kywd param if dic=True")
 
-    def fill_attributes(self, data_row):
+    def fill_attributes(self, line_list):
         """
         Fill the attributes using a CSV row
         :param data_row: string, represents a CSV row
         :return: fill attributes
         """
-        line_list = data_row.split(",")
+        if isinstance(line_list, str):
+            line_list = line_list.split(",")
         if line_list[0] == "designation":
             return None
         try:
@@ -86,22 +87,32 @@ class AstroObject:
             self.color1 = self.w1 - self.w2
             self.color2 = self.w3 - self.w4
         except:
-            print(line_list)
+            pass
 
     def fill_small(self, line_list):
-        self.objid = line_list[0]
-        self.ra = float(line_list[1])
-        self.dec = float(line_list[2])
-        self.ra_motion = float(line_list[5])
-        self.dec_motion = float(line_list[6])
-        self.w1 = float(line_list[9])
-        self.w2 = float(line_list[10])
-        self.w3 = float(line_list[11])
-        self.w4 = float(line_list[12])
+
+        if isinstance(line_list, str):
+            line_list = line_list.split(",")
+
+        try:
+            self.objid = line_list[0]
+            self.ra = float(line_list[1])
+            self.dec = float(line_list[2])
+            self.ra_motion = float(line_list[5])
+            self.dec_motion = float(line_list[6])
+            self.w1 = float(line_list[9])
+            self.w2 = float(line_list[10])
+            self.w3 = float(line_list[11])
+            self.w4 = float(line_list[12])
+            self.color1 = self.w1 - self.w2
+            self.color2 = self.w3 - self.w4
+        except:
+            pass
 
     def package_small(self):
         to_add = ["ra", "dec", "objid", "ra_motion",
-                  "dec_motion", "w1", "w2", "w3", "w4"]
+                  "dec_motion", "w1", "w2", "w3", "w4", "color1",
+                  "color2", "dist_from_center"]
         d = self.__dict__
         rv = {}
         for field in to_add:
@@ -123,13 +134,14 @@ class AstroObject:
         return a + b
 
     def euc_dist_4d(self, other):
-        ''' This calculates the euclidean distance
+        '''
+        This calculates the euclidean distance
         between two objects in 4 dimensional space (ra, dec, ra motion,
         dec motion)
         Inputs:
             other: AstroObject to comapre to.
         Outputs:
-            - distance between the points (float) in degrees
+            distance between the points (float) in degrees
         '''
         MAS_TO_DEG = 1 / 3600000  # Conversion from millisecond to degree
 
@@ -157,33 +169,21 @@ class AstroObject:
         for field in d.keys():
             setattr(self, field, d[field])
 
-    # def __eq__(self, other):
-    #     return self.objid == other.objid
-
-    # Unused as of now but might be useful.
     def __lt__(self, other):
-        if self.bin_id[0] < other.bin_id[0]:
+        if self.dist_from_center < other.dist_from_center:
             return True
-        if self.bin_id[0] == other.bin_id[0]:
-            if self.bin_id[1] < other.bin_id[1]:
-                return True
         return False
 
     def __gt__(self, other):
-        if self.bin_id[0] > other.bin_id[0]:
+        if self.dist_from_center > other.dist_from_center:
             return True
-        if self.bin_id[0] == other.bin_id[0]:
-            if self.bin_id[1] > other.bin_id[1]:
-                return True
         return False
 
     def __repr__(self):
         if self.objid:
-            return self.objid
+            rv = ""
+            for field in self.__dict__.keys():
+                rv += "{}: {}\n".format(field, self.__dict__[field])
+            return rv
         else:
             return ""
-
-    def __hash__(self):
-        # use the hashcode of self.objid since that is used
-        # for equality checks as well
-        return hash(self.objid)
