@@ -49,13 +49,6 @@ def cut_list(l, max_len, mult):
     return new_list
 
 
-def heapsort(input):
-    heap = []
-    for item in input:
-        heappush(heap, item)
-    return heap
-
-
 def map_clust(val, mod_std, max_len, len_mult, node_list):
     '''
     NOTE. THIS CURRENTLY GETS US OUTLIERS IN CLUSTERS. NOT CLUSTERS OF OUTLIERS.
