@@ -1,8 +1,10 @@
 import astro_object
 from mrjob.job import MRJob
 from mrjob.step import MRStep
+import mrjob
 import numpy as np
 import random_walk
+#import pickle
 
 
 def create_bins(num_ra_bins=360, num_dec_bins=180):
@@ -49,6 +51,12 @@ class MrBoxAstroObjects(MRJob):
     """
     Sort astro objects into boxes and random walk within each box
     """
+    # get input as raw strings
+    INPUT_PROTOCOL = mrjob.protocol.RawValueProtocol
+    # pass data internally with pickle
+    INTERNAL_PROTOCOL = mrjob.protocol.PickleProtocol
+    # write output as JSON
+    OUTPUT_PROTOCOL = mrjob.protocol.PickleProtocol
 
     def mapper_init_box(self):
         # Initialize bins
@@ -66,28 +74,51 @@ class MrBoxAstroObjects(MRJob):
 
             yield (ra_bin, dec_bin), astr
 
-    def reducer_box(self, bounds, astr):
-        # collapse astro objects of same bins together
-        yield bounds, astr
+    def combiner_box(self, bounds, astr):
+        astr_list = []
+        for astr_obj in astr:
+            astr_list.append(astr_obj)
+        yield bounds, astr_list
 
-    def mapper_rand_walk(self, bounds, astr):
+    def reducer_box(self, bounds, astr_lists):
+        # collapse astro objects of same bins together
+        flat_astr_list = []
+        for astro_list in astr_lists:
+            for astro_obj in astro_list:
+                flat_astr_list.append(astro_obj)
+        yield bounds, flat_astr_list
+
+    # def reducer_box(self, bounds, astr):
+    #     # collapse astro objects of same bins together
+    #     astr_list = []
+    #     for astr_obj in astr:
+    #         astr_list.append(astr_obj)
+    #     yield bounds, astr_list
+
+    def mapper_rand_walk(self, bounds, flat_astr_list):
         # cast dictionary representations of astro objects into actual astro objects
-        astro_obj_list = random_walk.recast_astro_objects(astr)
+        #astro_obj_list = random_walk.recast_astro_objects(flat_astr_list)
 
         # compute probabilities for random walk
-        prob_matrix = random_walk.build_adjacency_matrix(astro_obj_list)
+        prob_matrix = random_walk.build_adjacency_matrix(flat_astr_list)
 
         # complete random walk for each bin
         rw_astro_list = random_walk.random_walk(prob_matrix,
                                                 start_row=0,
-                                                iterations=5000,
-                                                astro_objects_list=astro_obj_list)
+                                                iterations=500,
+                                                astro_objects_list=flat_astr_list)
         yield bounds, rw_astro_list
 
-    def reducer_rand_walk(self, bounds, rw_astro_list):
+    def combiner_rand_walk(self, bounds, rw_astro_list):
+        combined_astr_list = []
+        for astr_obj in rw_astro_list:
+            combined_astr_list.append(astr_obj)
+        yield bounds, combined_astr_list
+
+    def reducer_rand_walk(self, bounds, combined_astr_list):
         # flatten list of list of astro objects
         flattened_rw_list = []
-        for list_of_objs in rw_astro_list:
+        for list_of_objs in combined_astr_list:
             # check if the astro object exists
             if list_of_objs:
                 for obj in list_of_objs:
@@ -99,8 +130,10 @@ class MrBoxAstroObjects(MRJob):
         return [
             MRStep(mapper_init=self.mapper_init_box,
                    mapper=self.mapper_box,
+                   combiner=self.combiner_box,
                    reducer=self.reducer_box),
             MRStep(mapper=self.mapper_rand_walk,
+                   combiner=self.combiner_rand_walk,
                    reducer=self.reducer_rand_walk)
         ]
 

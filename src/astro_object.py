@@ -1,4 +1,5 @@
 import csv
+import json
 
 '''
 '''
@@ -169,6 +170,17 @@ class AstroObject:
         for field in d.keys():
             setattr(self, field, d[field])
 
+<<<<<<< HEAD
+=======
+    # def __eq__(self, other):
+    #     return self.objid == other.objid
+
+    # def toJSON(self):
+    #     return json.dumps(self, default=lambda o: o.__dict__,
+    #                       sort_keys=False, indent=4)
+
+    # Unused as of now but might be useful.
+>>>>>>> 9a09ab00c7380fb9730944454bb6d8dd66f79215
     def __lt__(self, other):
         if self.dist_from_center < other.dist_from_center:
             return True
