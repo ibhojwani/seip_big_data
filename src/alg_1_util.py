@@ -14,7 +14,7 @@ def map_kmeans(line, centroids):
     astr = AstroObject()
     if isinstance(line, str):
         # Parses fresh input from file
-        astr.fill_small(line)
+        astr.fill_attributes(line)
 
     else:
         astr.from_dict(line)
@@ -55,7 +55,7 @@ def map_clust(val, mod_std, max_len, len_mult, node_list):
     TO CHANGE THIS, ONLY ADD TO LIST IF IS AN OUTLIER.
     '''
 
-    astr = AstroObject(data_row=val, small=True, dic=True)
+    astr = AstroObject(data_row=val, dic=True)
     new_node_list = node_list
     ###### PUT THE LINES MENTIONED ABOVE HERE TO CHANGE FUNCTIONALITY #####
     if mod_std < astr.dist_from_center:

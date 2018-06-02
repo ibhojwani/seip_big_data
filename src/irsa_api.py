@@ -136,7 +136,7 @@ def build_queries(num_bins, min_snr, catalog):
     RA_BDS = (0, 360)
     slice_list = [RA_BDS[0]]
     ra_size = (RA_BDS[1] - RA_BDS[0]) / num_bins
-    for r in range(num_bins):
+    for i in range(num_bins):
         slice_list.append(round(slice_list[-1] + ra_size, 3))
 
     # Create snr portion of query

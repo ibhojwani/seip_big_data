@@ -1,4 +1,4 @@
-from group_objects import MrBoxAstroObjects
+from alg_2 import MrBoxAstroObjects
 
 
 # Test code:

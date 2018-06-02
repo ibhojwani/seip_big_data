@@ -22,7 +22,7 @@ def recast_astro_objects(astro_list):
     return l
 
 
-def build_adjacency_matrix(astro_list):
+def build_adjacency_matrix(astr_list):
     """
     Build a matrix of probabilities for random walk. Each value at location
     i, j is a probability of moving from i'th object to j'th object and
@@ -32,24 +32,25 @@ def build_adjacency_matrix(astro_list):
     to 1
     """
     # If the list has 0 or 1 object, no travel between objects is possible:
-    if len(astro_list) <= 1:
+    if len(astr_list) <= 1:
         return None
 
     # create empty adjacency matrix
-    dimension = len(astro_list)
+    dimension = len(astr_list)
     adjacency_matrix = np.zeros((dimension, dimension))
 
-    for one_ind in range(len(astro_list)):
-        astro_1 = astro_list[one_ind]
-        for two_ind in range(one_ind + 1, len(astro_list)):
-            astro_2 = astro_list[two_ind]
-            try:
-                dist = astro_1.euc_dist_4d(astro_2)
-                adjacency_matrix[one_ind][two_ind] = dist
-                adjacency_matrix[two_ind][one_ind] = dist
-            except:
-                pass
-            # fill adjacency matrix
+    for one_ind in range(len(astr_list)):
+        astr_1 = astr_list[one_ind]
+
+        if astr_1.is_complete():
+            for two_ind in range(one_ind + 1, len(astr_list)):
+                astr_2 = astr_list[two_ind]
+
+                if astr_2.is_complete:
+                    # fill adjacency matrix
+                    dist = astr_1.euc_dist_4d(astr_2)
+                    adjacency_matrix[one_ind][two_ind] = dist
+                    adjacency_matrix[two_ind][one_ind] = dist
 
     # transform distances in adjacency matrix
     trans_matrix = transform_dist_matrix(adjacency_matrix)

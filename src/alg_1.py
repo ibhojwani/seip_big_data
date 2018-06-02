@@ -54,7 +54,6 @@ class MRTask1(MRJob):
             # then skip rest of steps
         centroids[center] = (round(color1_sum / counter, 5),
                              round(color2_sum / counter, 5))
-        print(centroids[center], self.counter)
 
     def reducer_std_mean(self, center, values):
         # NOTE: USE YIELD FROM?

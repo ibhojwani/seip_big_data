@@ -23,7 +23,7 @@ class MrBoxAstroObjects(MRJob):
 
     def mapper(self, _, line):
         # Construct an astro object and push the attributes in:
-        astr = astro_object.AstroObject(line)
+        astr = astro_object.AstroObject(data_row=line)
 
         # yield only if there is an astro object
         if astr.objid:
@@ -37,8 +37,8 @@ class MrBoxAstroObjects(MRJob):
         # compute probabilities for random walk
         astr_l = []
         for i in astr_gen:
-            if not i.w1_snr:
-                print(i)
+            # if not i.w1_snr:
+            #     print(i)
             astr_l.append(i)
         prob_matrix = alg_2_util.build_adjacency_matrix(astr_l)
         # complete random walk for each bin
@@ -46,6 +46,7 @@ class MrBoxAstroObjects(MRJob):
                                               start_row=0,
                                               iterations=500,
                                               astro_objects_list=astr_l)  # TODO: MAKE THIS ACCEPT GENERATORS
+        yield bounds, rw_astr_list
 
 
 if __name__ == '__main__':

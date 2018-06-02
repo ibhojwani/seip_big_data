@@ -2,7 +2,7 @@
 '''
 from numpy import histogram2d, zeros, nonzero
 import astro_object
-from group_objects import create_bins, sort_bins
+from alg_2_util import create_bins, sort_bins
 from skimage.filters import try_all_threshold
 from matplotlib import pyplot as plt
 
