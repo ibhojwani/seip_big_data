@@ -42,12 +42,15 @@ def build_adjacency_matrix(astro_list):
     for one_ind in range(len(astro_list)):
         astro_1 = astro_list[one_ind]
         for two_ind in range(one_ind + 1, len(astro_list)):
-            astro_2 = astro_list[two_ind]
-            dist = astro_1.euc_dist_4d(astro_2)
+            try:
+                astro_2 = astro_list[two_ind]
+                dist = astro_1.euc_dist_4d(astro_2)
 
-            # fill adjacency matrix
-            adjacency_matrix[one_ind][two_ind] = dist
-            adjacency_matrix[two_ind][one_ind] = dist
+                # fill adjacency matrix
+                adjacency_matrix[one_ind][two_ind] = dist
+                adjacency_matrix[two_ind][one_ind] = dist
+            except:
+                pass
 
     # transform distances in adjacency matrix
     trans_matrix = transform_dist_matrix(adjacency_matrix)
@@ -140,12 +143,6 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
 
             # make the new spot index the current index
             curr_index = new_spot_index
-        #print(random_walk_matrix)
+        # print(random_walk_matrix)
         return astro_objects_list_copy
     return None
-
-
-
-
-
-

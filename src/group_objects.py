@@ -58,7 +58,7 @@ class MrBoxAstroObjects(MRJob):
     # pass data internally with pickle
     INTERNAL_PROTOCOL = mrjob.protocol.PickleProtocol
     # write output as JSON
-    OUTPUT_PROTOCOL = mrjob.protocol.PickleProtocol
+    # OUTPUT_PROTOCOL = mrjob.protocol.PickleProtocol
 
     def mapper_init_box(self):
         # Initialize bins
