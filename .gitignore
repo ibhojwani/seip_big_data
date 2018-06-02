@@ -103,5 +103,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-$ vscode
+# vscode
 .vscode/
+
+# working dir
+data/
