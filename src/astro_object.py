@@ -1,4 +1,5 @@
 import csv
+import json
 
 '''
 '''
@@ -159,6 +160,10 @@ class AstroObject:
 
     # def __eq__(self, other):
     #     return self.objid == other.objid
+
+    # def toJSON(self):
+    #     return json.dumps(self, default=lambda o: o.__dict__,
+    #                       sort_keys=False, indent=4)
 
     # Unused as of now but might be useful.
     def __lt__(self, other):
