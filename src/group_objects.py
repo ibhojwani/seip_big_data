@@ -77,13 +77,20 @@ class MrBoxAstroObjects(MRJob):
             yield (ra_bin, dec_bin), astr
 
     def combiner_box(self, bounds, astr):
-        astr_list = []
-        for astr_obj in astr:
-            astr_list.append(astr_obj)
+        # Collect from a generator and collapse across same bound
+        # within each node:
+        # astr_list = []
+        # for astr_obj in astr:
+        #     astr_list.append(astr_obj)
+        # yield bounds, astr_list
+        astr_list = list(astr)
         yield bounds, astr_list
 
     def reducer_box(self, bounds, astr_lists):
-        # collapse astro objects of same bins together
+        # collapse lists of astro objects from different nodes across
+        # same bins together
+
+        # Flatten the list:
         flat_astr_list = []
         for astro_list in astr_lists:
             for astro_obj in astro_list:
@@ -102,10 +109,16 @@ class MrBoxAstroObjects(MRJob):
         yield bounds, rw_astro_list
 
     def combiner_rand_walk(self, bounds, rw_astro_list):
-        combined_astr_list = []
-        for astr_obj in rw_astro_list:
-            combined_astr_list.append(astr_obj)
-        yield bounds, combined_astr_list
+        # combined_astr_list = []
+        # for astr_obj in rw_astro_list:
+        #     combined_astr_list.append(astr_obj)
+        # yield bounds, combined_astr_list
+
+        # for astr_obj in rw_astro_list:
+        #     yield bounds, astr_obj
+
+        astr_list = list(rw_astro_list)
+        yield bounds, astr_list
 
     def reducer_rand_walk(self, bounds, combined_astr_list):
         # flatten list of list of astro objects
@@ -124,9 +137,9 @@ class MrBoxAstroObjects(MRJob):
                    mapper=self.mapper_box,
                    combiner=self.combiner_box,
                    reducer=self.reducer_box),
-            MRStep(mapper=self.mapper_rand_walk,
-                   combiner=self.combiner_rand_walk,
-                   reducer=self.reducer_rand_walk)
+            MRStep(mapper=self.mapper_rand_walk)
+                   # combiner=self.combiner_rand_walk)
+            # #        reducer=self.reducer_rand_walk)
         ]
 
 
