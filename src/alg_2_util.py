@@ -43,15 +43,16 @@ def build_adjacency_matrix(astro_list):
         astro_1 = astro_list[one_ind]
         for two_ind in range(one_ind + 1, len(astro_list)):
             astro_2 = astro_list[two_ind]
-            dist = astro_1.euc_dist_4d(astro_2)
-
+            try:
+                dist = astro_1.euc_dist_4d(astro_2)
+                adjacency_matrix[one_ind][two_ind] = dist
+                adjacency_matrix[two_ind][one_ind] = dist
+            except:
+                pass
             # fill adjacency matrix
-            adjacency_matrix[one_ind][two_ind] = dist
-            adjacency_matrix[two_ind][one_ind] = dist
 
     # transform distances in adjacency matrix
     trans_matrix = transform_dist_matrix(adjacency_matrix)
-
     # fill the diagonal with zeroes
     np.fill_diagonal(trans_matrix, val=0)
 
@@ -140,12 +141,45 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
 
             # make the new spot index the current index
             curr_index = new_spot_index
-        #print(random_walk_matrix)
         return astro_objects_list_copy
     return None
 
 
+def create_bins(num_ra_bins=360, num_dec_bins=360):
+    """
+    Create equally spaced bins for ra and dec coordinate ranges
+    :param num_ra_bins: integer, how many bins for ra
+    :param num_dec_bins: integer, how many bins for dec
+    :return ra_bins, dec_bins: tuple of numpy arrays with bin boundaries
+    """
+    RA_MIN = 0
+    RA_MAX = 360
+    DEC_MIN = -90
+    DEC_MAX = 90
+    num_ra_bins = num_ra_bins
+    num_dec_bins = num_dec_bins
+
+    # "+1" Because the bins are in between numbers, so (number of bins) is
+    # (number of boundaries - 1)
+    ra_bins = np.linspace(start=RA_MIN, stop=RA_MAX,
+                          num=num_ra_bins + 1)
+    dec_bins = np.linspace(start=DEC_MIN, stop=DEC_MAX,
+                           num=num_dec_bins + 1)
+
+    return ra_bins, dec_bins
 
 
+def sort_bins(ra, dec, ra_bins, dec_bins):
+    """
+    Sorts an astro object in a specific bin based on that astro object's
+    right ascension and declination values.
+    :param ra: float, right ascension
+    :param dec: float, declination
+    :param ra_bins: float
+    :param dec_bins: float
+    :return ra_bin, dec_bin: floats
+    """
+    ra_bin = int(np.digitize([ra], ra_bins)[0])
+    dec_bin = int(np.digitize([dec], dec_bins)[0])
 
-
+    return ra_bin - 1, dec_bin - 1
