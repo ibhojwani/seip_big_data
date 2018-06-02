@@ -1,25 +1,15 @@
 """
 Functions for Random Walks. Used in group_objects.py MRJob implementation.
 """
-from astro_object import AstroObject
 import numpy as np
 import copy  # For deep copying a list of Astro Objects
+from skimage.filters import try_all_threshold
+from matplotlib import pyplot as plt
+from time import sleep
+from math import inf
 
-
-def recast_astro_objects(astro_list):
-    """
-    Take a list of dictionaries with astro objects info and convert to
-    a list of astro objects
-    :param astro_list: list of dictionaries
-    :return l: list of astro objects, with attributes filled in.
-    """
-    l = []
-    for astro_dict in astro_list:
-        astro_object = AstroObject()  # instantiate astro object
-        astro_object.from_dict(astro_dict)  # cast back into astro object
-        l.append(astro_object)
-
-    return l
+import astro_object
+from astro_object import AstroObject
 
 
 def build_adjacency_matrix(astr_list):
@@ -59,7 +49,6 @@ def build_adjacency_matrix(astr_list):
 
     # normalize the transformed matrix across rows
     norm_trans_matrix = row_normalize_matrix(trans_matrix)
-
     return norm_trans_matrix
 
 
@@ -98,7 +87,7 @@ def row_normalize_matrix(transformed_matrix):
     return normalized_matrix
 
 
-def random_walk(prob_mat, start_row, iterations, astro_objects_list):
+def random_walk(prob_mat, start_row, iterations, astr_l):
     """
     Reference for function:
     https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
@@ -107,65 +96,44 @@ def random_walk(prob_mat, start_row, iterations, astro_objects_list):
     :param start_row: int, which row/point to start at
     :param iterations: int, number of iterations to do random walk
     :param astro_objects_list: list of astro objects
-    :return astro_objects_list_copy or None: list of astro objects, with
+    :return astr_l or None: list of astro objects, with
     visitation counts updated (None if bad probability matrix input)
     """
     # Check that probability matrix is a numpy array. It shouldn't be if
     # there were no objects between which to compare distances:
-    if type(prob_mat).__module__ == 'numpy':
+    if type(prob_mat).__module__ != 'numpy':
+        return None
+    # create array of possible outcomes
+    possible_outcomes = np.arange(prob_mat.shape[0])
+    # begin at pre-defined row
+    cur_index = start_row
 
-        # create array of possible outcomes
-        possible_outcomes = np.arange(prob_mat.shape[0])
+    # begin random walk
+    for i in range(iterations):
+        probs = prob_mat[cur_index]  # probability of transitions
 
-        # begin at pre-defined row
-        curr_index = start_row
+        # sample from probs
+        cur_index = np.random.choice(possible_outcomes, p=probs)
 
-        # Deepcopy astro object list:
-        astro_objects_list_copy = copy.deepcopy(astro_objects_list)
+        # increment counts in the astro object attribute
+        astr_l[cur_index].rand_walk_visits += 1
 
-        # create empty matrix to store random walk results
-        dimension = len(prob_mat)
-        random_walk_matrix = np.zeros((dimension, dimension))
-
-        # begin random walk
-        for k in range(iterations):
-            probs = prob_mat[curr_index]  # probability of transitions
-
-            # sample from probs
-            new_spot_index = np.random.choice(possible_outcomes, p=probs)
-
-            # increment counts in the astro object attribute
-            astro_objects_list_copy[new_spot_index].rand_walk_visits += 1
-
-            random_walk_matrix[curr_index][new_spot_index] += 1
-            random_walk_matrix[new_spot_index][curr_index] += 1
-
-            # make the new spot index the current index
-            curr_index = new_spot_index
-        return astro_objects_list_copy
-    return None
+    return astr_l
 
 
-def create_bins(num_ra_bins=360, num_dec_bins=360):
+def create_bin(ra1, ra2, dec1, dec2, n_ra=360, n_dec=360):
     """
     Create equally spaced bins for ra and dec coordinate ranges
-    :param num_ra_bins: integer, how many bins for ra
-    :param num_dec_bins: integer, how many bins for dec
+    :param n_ra: integer, how many bins for ra
+    :param n_dec: integer, how many bins for dec
+    :ra1, ra2, dec1, dec2: floats, bounds within to make bins
     :return ra_bins, dec_bins: tuple of numpy arrays with bin boundaries
     """
-    RA_MIN = 0
-    RA_MAX = 360
-    DEC_MIN = -90
-    DEC_MAX = 90
-    num_ra_bins = num_ra_bins
-    num_dec_bins = num_dec_bins
 
     # "+1" Because the bins are in between numbers, so (number of bins) is
     # (number of boundaries - 1)
-    ra_bins = np.linspace(start=RA_MIN, stop=RA_MAX,
-                          num=num_ra_bins + 1)
-    dec_bins = np.linspace(start=DEC_MIN, stop=DEC_MAX,
-                           num=num_dec_bins + 1)
+    ra_bins = np.linspace(start=ra1, stop=ra2, num=n_ra + 1)
+    dec_bins = np.linspace(start=dec1, stop=dec2, num=n_dec + 1)
 
     return ra_bins, dec_bins
 
@@ -183,4 +151,46 @@ def sort_bins(ra, dec, ra_bins, dec_bins):
     ra_bin = int(np.digitize([ra], ra_bins)[0])
     dec_bin = int(np.digitize([dec], dec_bins)[0])
 
-    return ra_bin - 1, dec_bin - 1
+    return ra_bin - 1, dec_bin - 1  # -1 due to how digitize bins
+
+
+def watershed(bounds, random_walk, num_bins):
+    '''
+    Inputs:
+        random_walk: a counter containing the visitation counts of a
+            random walk algorithm, containing the AstroObjects and their
+            visitation counts
+    Returns: nested list containing lists of AstroObjects in a given
+        cluster
+    '''
+    MIN_RA = 0
+    MIN_DEC = -90
+    RA_RANGE = 360
+    DEC_RANGE = 180
+
+    ra_l = (RA_RANGE / num_bins) * bounds[0] + MIN_RA
+    dec_l = (DEC_RANGE / num_bins) * bounds[1] + MIN_DEC
+    ra_u = (RA_RANGE / num_bins) * (bounds[0] + 1) + MIN_RA
+    dec_u = (DEC_RANGE / num_bins) * (bounds[1] + 1) + MIN_DEC
+
+    ra_bins, dec_bins = create_bin(
+        ra_l, ra_u, dec_l, dec_u, n_ra=150, n_dec=150)
+    lowest_ra = inf
+    lowest_dec = inf
+    for i in random_walk:
+        if i.ra < lowest_ra:
+            lowest_ra = i.ra
+        if i.dec < lowest_dec:
+            lowest_dec = i.dec
+
+    prob_mtrx = np.zeros((len(ra_bins) - 1, len(dec_bins) - 1))
+
+    for astr in random_walk:
+        ra_bin, dec_bin = sort_bins(astr.ra, astr.dec, ra_bins, dec_bins)
+        prob_mtrx[ra_bin][dec_bin] += astr.rand_walk_visits
+        astr.bin_id = (ra_bin, dec_bin)
+
+    plt.imshow(prob_mtrx, cmap='YlGnBu', interpolation='nearest')
+
+    plt.show()
+    try_all_threshold(prob_mtrx)

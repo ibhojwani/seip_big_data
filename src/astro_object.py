@@ -124,8 +124,15 @@ class AstroObject:
             setattr(self, field, d[field])
 
     def is_complete(self):
-        for value in self.__dict__.values():
-            if not value:
+        '''
+        Checks that the most important values are present. The data is not
+        clean so this may not always be the case, although we try to filter for
+        it in our API pull.
+        '''
+        to_check = ["ra", "dec", "objid", "ra_motion",
+                    "dec_motion", "color1", "color2"]
+        for value in to_check:
+            if not self.__dict__[value]:
                 return False
         return True
 
