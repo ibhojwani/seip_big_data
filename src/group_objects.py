@@ -58,7 +58,7 @@ class MrBoxAstroObjects(MRJob):
     # pass data internally with pickle
     INTERNAL_PROTOCOL = mrjob.protocol.PickleProtocol
     # write output as JSON
-    # OUTPUT_PROTOCOL = mrjob.protocol.PickleProtocol
+    OUTPUT_PROTOCOL = mrjob.protocol.PickleProtocol
 
     def mapper_init_box(self):
         # Initialize bins
@@ -79,10 +79,6 @@ class MrBoxAstroObjects(MRJob):
     def combiner_box(self, bounds, astr):
         # Collect from a generator and collapse across same bound
         # within each node:
-        # astr_list = []
-        # for astr_obj in astr:
-        #     astr_list.append(astr_obj)
-        # yield bounds, astr_list
         astr_list = list(astr)
         yield bounds, astr_list
 
@@ -101,35 +97,14 @@ class MrBoxAstroObjects(MRJob):
         # compute probabilities for random walk
         prob_matrix = random_walk.build_adjacency_matrix(flat_astr_list)
 
-        # complete random walk for each bin
+        # complete random walk for each bin; fills int
+        # counts of visits for each astro object in the flat_astr_list,
+        # but yields a deep copy of that list:
         rw_astro_list = random_walk.random_walk(prob_matrix,
                                                 start_row=0,
                                                 iterations=500,
                                                 astro_objects_list=flat_astr_list)
         yield bounds, rw_astro_list
-
-    def combiner_rand_walk(self, bounds, rw_astro_list):
-        # combined_astr_list = []
-        # for astr_obj in rw_astro_list:
-        #     combined_astr_list.append(astr_obj)
-        # yield bounds, combined_astr_list
-
-        # for astr_obj in rw_astro_list:
-        #     yield bounds, astr_obj
-
-        astr_list = list(rw_astro_list)
-        yield bounds, astr_list
-
-    def reducer_rand_walk(self, bounds, combined_astr_list):
-        # flatten list of list of astro objects
-        flattened_rw_list = []
-        for list_of_objs in combined_astr_list:
-            # check if the astro object exists
-            if list_of_objs:
-                for obj in list_of_objs:
-                    flattened_rw_list.append(obj)
-
-        yield bounds, flattened_rw_list
 
     def steps(self):
         return [
@@ -138,8 +113,6 @@ class MrBoxAstroObjects(MRJob):
                    combiner=self.combiner_box,
                    reducer=self.reducer_box),
             MRStep(mapper=self.mapper_rand_walk)
-                   # combiner=self.combiner_rand_walk)
-            # #        reducer=self.reducer_rand_walk)
         ]
 
 

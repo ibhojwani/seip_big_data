@@ -12,10 +12,10 @@ if __name__ == "__main__":
         for line in runner.stream_output():
             # list_of_astroobjs here will contain items within a single box:
             bounds, list_of_astroobjs = mr_job.parse_output_line(line)
-            print(bounds, list_of_astroobjs)
-            #Some lists will be empty (when only one or zero objects in a box):
+            # Some lists will be empty (when only one or zero objects in a box):
             if list_of_astroobjs:
                 for astro_obj in list_of_astroobjs:
-                    if astro_obj:
-                        # This just prints number of visits of this astro object:
-                        print(astro_obj.rand_walk_visits)
+                    # This just prints number of visits of this astro object:
+                    print("OBJECT ID:", astro_obj.objid,
+                          "| NUM VISITS:", astro_obj.rand_walk_visits)
+            print("===================BOX SEPARATOR===================")
