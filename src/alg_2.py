@@ -4,7 +4,7 @@ Algorithm II Implemenation.
 import astro_object
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-from mrjob.protocol import PickleProtocol, RawValueProtocol
+from mrjob.protocol import PickleProtocol, RawValueProtocol, UltraJSONValueProtocol
 import numpy as np
 import alg_2_util
 
@@ -16,7 +16,7 @@ class MrBoxAstroObjects(MRJob):
 
     # pass data internally with pickle
     INTERNAL_PROTOCOL = PickleProtocol
-    OUTPUT_PROTOCOL = PickleProtocol
+    OUTPUT_PROTOCOL = UltraJSONValueProtocol
 
     def mapper_init(self):
         # Initialize bins
