@@ -57,21 +57,22 @@ def comb_clust(astr, dist_gen, top_k, num_bins):
         num_bins: how finely to calculate counts
     Yields: 1 (junk value), AstroObject w/ dist_from_center attribute
     '''
+
     heap = [val for val in dist_gen]
-    vals = heapify(heap)
-    cutoff = min(top_k, len(vals))  # ensure we don't have indexerrors
-    vals = vals[:cutoff]
-    counts, edges = histogram([i[0] for i in vals], num_bins, density=True)
+    if not heap:
+        return None
+    heapify(heap)
+    cutoff = min(top_k, len(heap))  # ensure we don't have indexerrors
+    heap = heap[:cutoff]
+    counts, edges = histogram([i for i in heap], num_bins, density=True)
     y = array([0] + list(counts))
     x = array(list(edges))  # get distances
     # we need to give some approximate knots
     # calculate the derivates
     d1 = UnivariateSpline(x=x, y=y, k=4).derivative().roots()
-    # print(d1)
     try:
-        if min(d1) < 1:
-            astr.dist_from_center = min(d1)
-            yield 1, astr
+        astr.dist_from_center = min(d1)
+        yield 1, astr
     except:
         pass
 

@@ -79,8 +79,11 @@ class Algorithm1MR(KMeansMR, StdevMR):
             astr: AstroObject
         Yields: junk, AstroObject
         '''
-        if astr.dist_from_center < self.stdev[junk] / self.STD_CUTOFF:
+        if astr.dist_from_center < self.stdev[junk] / 1:
             yield junk, astr
+
+    def reducer_return(self, junk, astr):
+        yield junk, astr
 
     def steps(self):
         # Find color outliers
@@ -94,7 +97,8 @@ class Algorithm1MR(KMeansMR, StdevMR):
 
         # Repeat stdev filtering on radius of clusters, and then return
         # objects which have a very small radius
-        final = [MRStep(mapper=self.mapper_return)]
+        final = [MRStep(mapper=self.mapper_return,
+                        reducer=self.reducer_return)]
 
         return kmeans + stdev + cluster + stdev + final
 
