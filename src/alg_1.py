@@ -18,7 +18,6 @@ are then returned as YSO candidates.
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 from mrjob.protocol import UltraJSONValueProtocol
-from math import inf
 
 import alg_1_util
 from kmeans import KMeansMR
