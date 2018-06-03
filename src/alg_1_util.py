@@ -1,5 +1,6 @@
 from numpy.random import randint
-from numpy import histogram
+from numpy import histogram, array
+from scipy.interpolate import UnivariateSpline
 from heapq import heapify
 
 
@@ -56,20 +57,38 @@ def comb_clust(astr, dist_gen, top_k, num_bins):
         num_bins: how finely to calculate counts
     Yields: 1 (junk value), AstroObject w/ dist_from_center attribute
     '''
-    # Pick num clusters / allocate memory so this next line isnt an
-    # issue at a given node. Sort by distance from astr.
-    heap = [i for i in dist_gen]
-    heapify(heap)
-    # Truncate to desired value.
-    cutoff = min(top_k, len(heap))
-    heap = heap[:cutoff]
+    heap = [val for val in dist_gen]
+    vals = heapify(heap)
+    cutoff = min(top_k, len(vals))  # ensure we don't have indexerrors
+    vals = vals[:cutoff]
+    counts, edges = histogram([i[0] for i in vals], num_bins, density=True)
+    y = array([0] + list(counts))
+    x = array(list(edges))  # get distances
+    # we need to give some approximate knots
+    # calculate the derivates
+    d1 = UnivariateSpline(x=x, y=y, k=4).derivative().roots()
+    # print(d1)
+    try:
+        if min(d1) < 1:
+            astr.dist_from_center = min(d1)
+            yield 1, astr
+    except:
+        pass
 
-    # Bin distances.
-    counts, edges = histogram([dist for dist in heap], num_bins)
-    x = list(edges)
-    y = list(counts)
+    # # Pick num clusters / allocate memory so this next line isnt an
+    # # issue at a given node. Sort by distance from astr.
+    # heap = [i for i in dist_gen]
+    # heapify(heap)
+    # # Truncate to desired value.
+    # cutoff = min(top_k, len(heap))
+    # heap = heap[:cutoff]
 
-    # Store potential cluster radius in astr.dist_from_cente
-    # NOTE: need a better way to calcualte radius
-    astr.dist_from_center = x[y.index(max(y))]
-    yield 1, astr
+    # # Bin distances.
+    # counts, edges = histogram([dist for dist in heap], num_bins)
+    # x = list(edges)
+    # y = list(counts)
+
+    # # Store potential cluster radius in astr.dist_from_cente
+    # # NOTE: need a better way to calcualte radius
+    # astr.dist_from_center = x[y.index(max(y))]
+    # yield 1, astr
