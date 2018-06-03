@@ -45,8 +45,9 @@ class MrBoxAstroObjects(MRJob):
         rand_walk_mtrx = alg_2_util.random_walk(prob_mtrx, 25, 100, astr_l)
 
         # Threshold and filter
-        yield from alg_2_util.apply_threshold(bounds, rand_walk_mtrx, 360)
+        yield from alg_2_util.apply_threshold(bounds, rand_walk_mtrx, num_bins)
 
 
 if __name__ == '__main__':
+    num_bins = 360
     MrBoxAstroObjects.run()
