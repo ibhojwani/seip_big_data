@@ -38,6 +38,7 @@ class Algorithm2MR(KMeansMR, StdevMR):
     NUM_ITER = 20  # How many random walks to run
     NUM_JUMPS = 100  # How many jumps to make within each random walk
     SUBDIVS = 60  # How many ra/dec subdivs to make for thresholding
+    STD_CUTOFF = 4
 
     def mapper_clust(self, _, line):
         '''

@@ -11,8 +11,6 @@ class StdevMR(MRJob):
 
     INTERNAL_PROTOCOL = PickleProtocol
 
-    STD_CUTOFF = 3.5
-
     stdev = {}
     means = {}
 

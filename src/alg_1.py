@@ -17,7 +17,7 @@ are then returned as YSO candidates.
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-from mrjob.protocol import RawValueProtocol
+from mrjob.protocol import UltraJSONValueProtocol
 from math import inf
 
 import alg_1_util
@@ -34,6 +34,9 @@ class Algorithm1MR(KMeansMR, StdevMR):
     LEN_MULT = 0.5  # Reduction factor when MAX_LEN is reached
     TOP_K = 250  # Number of closest objects to draw radii with
     BINS = 15  # Number of bins into which we histogram the points
+    STD_CUTOFF = 2.5
+
+    OUTPUT_PROTOCOL = UltraJSONValueProtocol
 
     def mapper_clust_init(self):
         '''
