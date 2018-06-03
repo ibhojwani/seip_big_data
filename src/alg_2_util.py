@@ -167,6 +167,7 @@ def apply_threshold(bounds, random_walk, num_bins):
     '''
     if not random_walk:
         return None
+
     MIN_RA = 0
     MIN_DEC = -90
     RA_RANGE = 360
@@ -192,11 +193,16 @@ def apply_threshold(bounds, random_walk, num_bins):
     for astr in random_walk:
         ra_bin, dec_bin = sort_bins(astr.ra, astr.dec, ra_bins, dec_bins)
         prob_mtrx[ra_bin][dec_bin] += astr.rand_walk_visits
-        astr.bin_id = (ra_bin, dec_bin)
+        astr.bin_id = [ra_bin, dec_bin]
 
     try:
         thresh = skimage.filters.threshold_minimum(prob_mtrx)
-        out = (prob_mtrx >= thresh) * prob_mtrx
-        return out
+        clusters = (prob_mtrx >= thresh) * prob_mtrx
+        clusters_idx = np.transpose(np.nonzero(clusters))
+
     except:
         return None
+
+    for astr in random_walk:
+        if astr.bin_id in clusters_idx:
+            yield None, astr

@@ -34,7 +34,6 @@ class MRTask1(MRJob):
             yield centroid, values
 
     def reducer_kmeans_init(self):
-        self.counter = 0
         self.sums = {}
 
     def reducer_kmeans(self, center, values):
@@ -44,7 +43,6 @@ class MRTask1(MRJob):
         color1_sum = 0
         color2_sum = 0
         for item in values:
-            self.counter += 1
             counter += 1
             color1_sum += item['color1']
             color2_sum += item['color2']
@@ -135,7 +133,7 @@ class MRTask1(MRJob):
 
 
 if __name__ == '__main__':
-    iterations = 25
+    iterations = 10
     centroids = [(0, 0), (0.6, 4)]  # Approx location of centroids
     centroids_old = centroids.copy()
     std_cutoff = 3.5

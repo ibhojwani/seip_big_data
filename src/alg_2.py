@@ -4,7 +4,7 @@ Algorithm II Implemenation.
 import astro_object
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-import mrjob
+from mrjob.protocol import PickleProtocol, RawValueProtocol
 import numpy as np
 import alg_2_util
 
@@ -15,7 +15,8 @@ class MrBoxAstroObjects(MRJob):
     """
 
     # pass data internally with pickle
-    INTERNAL_PROTOCOL = mrjob.protocol.PickleProtocol
+    INTERNAL_PROTOCOL = PickleProtocol
+    OUTPUT_PROTOCOL = RawValueProtocol
 
     def mapper_init(self):
         # Initialize bins
@@ -40,12 +41,11 @@ class MrBoxAstroObjects(MRJob):
             astr_l.append(i)  # bounds size is chosen so this is possible
 
         # Build prob matrix and complete random walk for each bin
-        prob_matrix = alg_2_util.build_adjacency_matrix(astr_l)
-        rw_astr_list = alg_2_util.random_walk(
-            prob_matrix, 100, 1000, astr_l)
-        alg_2_util.apply_threshold(bounds, rw_astr_list, 360)
-        # if rw_astr_list:
-        #     yield bounds, rw_astr_list
+        prob_mtrx = alg_2_util.build_adjacency_matrix(astr_l)
+        rand_walk_mtrx = alg_2_util.random_walk(prob_mtrx, 25, 100, astr_l)
+
+        # Threshold and filter
+        yield from alg_2_util.apply_threshold(bounds, rand_walk_mtrx, 360)
 
 
 if __name__ == '__main__':
