@@ -1,10 +1,10 @@
-from group_objects import MrBoxAstroObjects
+from alg_2 import MrBoxAstroObjects
 
 
 # Test code:
 if __name__ == "__main__":
     # initialize MRJob:
-    csv_input = '5218597(50).csv'
+    csv_input = 'data/5218562_short.csv'
     mr_job = MrBoxAstroObjects(args=['-r', 'local', csv_input])
     with mr_job.make_runner() as runner:
         runner.run()
