@@ -4,6 +4,7 @@ Functions for Random Walks. Used in group_objects.py MRJob implementation.
 import numpy as np
 import copy  # For deep copying a list of Astro Objects
 from skimage.filters import try_all_threshold
+import skimage.filters
 from matplotlib import pyplot as plt
 from time import sleep
 from math import inf
@@ -70,7 +71,7 @@ def transform_distance(distance):
     :param distance: float
     :return transformed_dist: float
     """
-    transformed_dist = 1 / (1 + distance)
+    transformed_dist = 1 / (1 + distance**1.5)
 
     return transformed_dist
 
@@ -87,7 +88,7 @@ def row_normalize_matrix(transformed_matrix):
     return normalized_matrix
 
 
-def random_walk(prob_mat, start_row, iterations, astr_l):
+def random_walk(prob_mat, iterations, subiter, astr_l):
     """
     Reference for function:
     https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
@@ -106,17 +107,18 @@ def random_walk(prob_mat, start_row, iterations, astr_l):
     # create array of possible outcomes
     possible_outcomes = np.arange(prob_mat.shape[0])
     # begin at pre-defined row
-    cur_index = start_row
 
     # begin random walk
     for i in range(iterations):
-        probs = prob_mat[cur_index]  # probability of transitions
+        cur_index = np.random.choice(possible_outcomes)
+        for j in range(subiter):
+            probs = prob_mat[cur_index]  # probability of transitions
 
-        # sample from probs
-        cur_index = np.random.choice(possible_outcomes, p=probs)
+            # sample from probs
+            cur_index = np.random.choice(possible_outcomes, p=probs)
 
-        # increment counts in the astro object attribute
-        astr_l[cur_index].rand_walk_visits += 1
+            # increment counts in the astro object attribute
+            astr_l[cur_index].rand_walk_visits += 1
 
     return astr_l
 
@@ -154,7 +156,7 @@ def sort_bins(ra, dec, ra_bins, dec_bins):
     return ra_bin - 1, dec_bin - 1  # -1 due to how digitize bins
 
 
-def watershed(bounds, random_walk, num_bins):
+def apply_threshold(bounds, random_walk, num_bins):
     '''
     Inputs:
         random_walk: a counter containing the visitation counts of a
@@ -163,6 +165,8 @@ def watershed(bounds, random_walk, num_bins):
     Returns: nested list containing lists of AstroObjects in a given
         cluster
     '''
+    if not random_walk:
+        return None
     MIN_RA = 0
     MIN_DEC = -90
     RA_RANGE = 360
@@ -174,7 +178,7 @@ def watershed(bounds, random_walk, num_bins):
     dec_u = (DEC_RANGE / num_bins) * (bounds[1] + 1) + MIN_DEC
 
     ra_bins, dec_bins = create_bin(
-        ra_l, ra_u, dec_l, dec_u, n_ra=150, n_dec=150)
+        ra_l, ra_u, dec_l, dec_u, n_ra=10, n_dec=10)
     lowest_ra = inf
     lowest_dec = inf
     for i in random_walk:
@@ -190,7 +194,9 @@ def watershed(bounds, random_walk, num_bins):
         prob_mtrx[ra_bin][dec_bin] += astr.rand_walk_visits
         astr.bin_id = (ra_bin, dec_bin)
 
-    plt.imshow(prob_mtrx, cmap='YlGnBu', interpolation='nearest')
-
-    plt.show()
-    try_all_threshold(prob_mtrx)
+    try:
+        thresh = skimage.filters.threshold_minimum(prob_mtrx)
+        out = (prob_mtrx >= thresh) * prob_mtrx
+        return out
+    except:
+        return None

@@ -41,10 +41,11 @@ class MrBoxAstroObjects(MRJob):
 
         # Build prob matrix and complete random walk for each bin
         prob_matrix = alg_2_util.build_adjacency_matrix(astr_l)
-        rw_astr_list = alg_2_util.random_walk(prob_matrix, 0, 500, astr_l)
-        alg_2_util.watershed(bounds, rw_astr_list, 360)
-        if rw_astr_list:
-            yield bounds, rw_astr_list
+        rw_astr_list = alg_2_util.random_walk(
+            prob_matrix, 100, 1000, astr_l)
+        alg_2_util.apply_threshold(bounds, rw_astr_list, 360)
+        # if rw_astr_list:
+        #     yield bounds, rw_astr_list
 
 
 if __name__ == '__main__':

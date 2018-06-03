@@ -135,7 +135,7 @@ class MRTask1(MRJob):
 
 
 if __name__ == '__main__':
-    iterations = 1
+    iterations = 25
     centroids = [(0, 0), (0.6, 4)]  # Approx location of centroids
     centroids_old = centroids.copy()
     std_cutoff = 3.5
