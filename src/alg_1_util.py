@@ -1,42 +1,6 @@
-from mrjob.job import MRJob
-from mrjob.step import MRStep
-from astro_object import AstroObject
 from numpy.random import randint
-from math import inf, sqrt
-from numpy import array, histogram
+from numpy import histogram
 from heapq import heapify
-from scipy.interpolate import UnivariateSpline
-from time import sleep
-from matplotlib import pyplot as plt
-
-
-def map_kmeans(line, centroids):
-    astr = AstroObject()
-    if isinstance(line, str):
-        # Parses fresh input from file
-        astr.fill_attributes(line)
-
-    else:
-        astr.from_dict(line)
-
-    # Calc closest centroid, yield that centroid and obj colors
-    if astr.ra:
-        center_idx = None
-        closest = inf
-        for i, center in enumerate(centroids):
-            dist = astr.sq_euc_2d(
-                astr.color1, astr.color2, center[0], center[1])
-            if dist < closest:
-                closest = dist
-                center_idx = i
-
-        astr.dist_from_center = closest
-        # Package relevant info as a hashable type to yield
-        astr_to_pass = astr.package_small()
-        # Yield centroid id, astro object, and distance to center
-        return center_idx, astr_to_pass
-
-    return None, None
 
 
 def cut_list(l, max_len, mult):
@@ -49,45 +13,63 @@ def cut_list(l, max_len, mult):
     return new_list
 
 
-def map_clust(val, mod_std, max_len, len_mult, node_list):
+def map_clust(astr, max_len, len_mult, node_list):
     '''
-    NOTE. THIS CURRENTLY GETS US OUTLIERS IN CLUSTERS. NOT CLUSTERS OF OUTLIERS.
-    TO CHANGE THIS, ONLY ADD TO LIST IF IS AN OUTLIER.
+    For a given AstroObject, yield the object and distances to a random
+    collection of color outliers in the sky.
+    Inputs:
+        astr: AstroObject to compare
+        max_len: int, max number of other outliers to store in memory
+        len_mult: float in (0,1), multiplier to reduce max_len by
+        node_list: list of other objects in sky to compare to, 
+            persistent for each mapper
+    Yields: Astro object and distance to another outlier in the sky
     '''
-
-    astr = AstroObject(data_row=val, dic=True)
     new_node_list = node_list
-    ###### PUT THE LINES MENTIONED ABOVE HERE TO CHANGE FUNCTIONALITY #####
-    if mod_std < astr.dist_from_center:
-        ############ THIS LINE IS THE ONE TO CHANGE AS MENTIONED ABOVE ####
-        new_node_list.append(astr)
-        ############ THE LINES ABOVE ###################
+    new_node_list.append(astr)
 
-        # If our node list is too large, we randomly toss values
-        if len(new_node_list) > max_len:
-            new_node_list = new_node_list[:round(max_len * len_mult)]
+    # If our node list is too large, toss oldest (first) values
+    if len(new_node_list) > max_len:
+        new_start = len(new_node_list) - round(max_len * len_mult)
+        new_node_list = new_node_list[new_start:]
 
-        # Validate that our list is still the right size
-        if len(new_node_list) > max_len * len_mult:
-            # Now iterate over the nodes and find distances
-            for astr2 in new_node_list:
-                dist = astr.euc_dist_4d(astr2)
-                yield astr, dist
+    # Validate that our list is still the right size
+    if len(new_node_list) > max_len * len_mult:
+        # Now iterate over the nodes and find distances
+        for astr2 in new_node_list:
+            dist = astr.euc_dist_4d(astr2)
+            yield astr, dist
 
-        node_list[:] = new_node_list
+    node_list[:] = new_node_list
 
 
-def comb_clust(astr, vals, top_k, num_bins):
-    heap = [i for i in vals]
+def comb_clust(astr, dist_gen, top_k, num_bins):
+    '''
+    Takes an AstroObject and a generator of distances from the object
+    to other outliers in the sky. Returns a radius within which a
+    cluster may lie, if any exist.
+    Inputs:
+        astr: AstroObject to analyze. Radius is put in dist_from_center
+            attribute.
+        dist_gen: generator of distances to a set of nearby outliers
+        top_k: how many outliers to examine
+        num_bins: how finely to calculate counts
+    Yields: 1 (junk value), AstroObject w/ dist_from_center attribute
+    '''
+    # Pick num clusters / allocate memory so this next line isnt an
+    # issue at a given node. Sort by distance from astr.
+    heap = [i for i in dist_gen]
     heapify(heap)
-    cutoff = min(top_k, len(heap))  # ensure we don't have indexerrors
+    # Truncate to desired value.
+    cutoff = min(top_k, len(heap))
     heap = heap[:cutoff]
 
+    # Bin distances.
     counts, edges = histogram([dist for dist in heap], num_bins)
+    x = list(edges)
     y = list(counts)
-    x = list(edges)  # get distances
-    # we need to give some approximate knots
-    # calculate the derivates
 
-    astr['dist_from_center'] = x[y.index(max(y))]
+    # Store potential cluster radius in astr.dist_from_cente
+    # NOTE: need a better way to calcualte radius
+    astr.dist_from_center = x[y.index(max(y))]
     yield 1, astr

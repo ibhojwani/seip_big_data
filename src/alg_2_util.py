@@ -1,28 +1,27 @@
 """
-Functions for Random Walks. Used in group_objects.py MRJob implementation.
-"""
-import numpy as np
-import copy  # For deep copying a list of Astro Objects
-from skimage.filters import try_all_threshold
-import skimage.filters
-from matplotlib import pyplot as plt
-from time import sleep
-from math import inf
+CS12300 Spring 2018
+TBD
+Tyler Amos, Ishaan Bhojwani, Kevin Sun, Alexander Tyan
 
-import astro_object
+Utility functions for algorithm 2 (alg_2.py).
+"""
+
+import numpy as np
+from skimage.filters import threshold_minimum
+
 from astro_object import AstroObject
 
 
 def build_adjacency_matrix(astr_list):
     """
-    Build a matrix of probabilities for random walk. Each value at location
-    i, j is a probability of moving from i'th object to j'th object and
-    vice-versa
+    Build a matrix of probabilities for random walk. Each value at
+    location i, j is a probability of moving from i'th object to j'th
+    object.
     :param astro_list: list of astro objects
-    :return norm_trans_matrix: numpy array, probability matrix, with rows adding
-    to 1
+    :return norm_trans_matrix: numpy matrix with each row i representing
+        the probability of a jump from object i to j.
     """
-    # If the list has 0 or 1 object, no travel between objects is possible:
+    # If the list has 0 or 1 object, no travel possible between objects
     if len(astr_list) <= 1:
         return None
 
@@ -30,6 +29,7 @@ def build_adjacency_matrix(astr_list):
     dimension = len(astr_list)
     adjacency_matrix = np.zeros((dimension, dimension))
 
+    # Popualate matrix with distances between objects
     for one_ind in range(len(astr_list)):
         astr_1 = astr_list[one_ind]
 
@@ -43,22 +43,26 @@ def build_adjacency_matrix(astr_list):
                     adjacency_matrix[one_ind][two_ind] = dist
                     adjacency_matrix[two_ind][one_ind] = dist
 
-    # transform distances in adjacency matrix
+    # Prep matrix for normalization (make higher dist -> lower number)
     trans_matrix = transform_dist_matrix(adjacency_matrix)
-    # fill the diagonal with zeroes
+
+    # fill the diagonal with zeroes (so 0 prob of jumping to itself)
     np.fill_diagonal(trans_matrix, val=0)
 
     # normalize the transformed matrix across rows
     norm_trans_matrix = row_normalize_matrix(trans_matrix)
+
     return norm_trans_matrix
 
 
 def transform_dist_matrix(dist_adj_mat):
     """
-    Helper function, transforms a matrix of distances to a matrix of trans-
-    formed distances. Each distance is transformed with function transform_distance
-    :param dist_adj_mat: numpy array, matrix of distances between objects
-    :return func(dist_adj_mat): numpy array, matrix of transformed distances
+    Transforms a matrix of distances. Each distance is transformed with
+    function transform_distance.
+    :param dist_adj_mat: numpy array, matrix of distances between
+        objects
+    :return func(dist_adj_mat): numpy array, matrix of transformed
+        distances
     """
     func = np.vectorize(transform_distance)
     return func(dist_adj_mat)
@@ -66,8 +70,8 @@ def transform_dist_matrix(dist_adj_mat):
 
 def transform_distance(distance):
     """
-    Transform a distance into a measure that recallibrates the distance to
-    give higher values to closer objects
+    Transform distance into a measure that turns larger distances into
+    lower probabilities.
     :param distance: float
     :return transformed_dist: float
     """
@@ -90,15 +94,21 @@ def row_normalize_matrix(transformed_matrix):
 
 def random_walk(prob_mat, iterations, subiter, astr_l):
     """
+    Jumps randomly between astronomical objects. Probability that jump
+    is made is dependent on probs in prob_mat, and is inversely
+    proportional to distance between the objects. Keeps track of each
+    objects visitation count. Higher visit counts signify an object
+    with many objects around it (aka a good cluster candidate).
+    NOTE: This is the most comp intense thing we do. Find a better way?
     Reference for function:
     https://medium.com/@sddkal/random-walks-on-adjacency-matrices-a127446a6777
 
     :param prob_mat: numpy array, probabilities of visting other points
-    :param start_row: int, which row/point to start at
-    :param iterations: int, number of iterations to do random walk
-    :param astro_objects_list: list of astro objects
+    :param iterations: int, number of random walks to perform
+    :param subiter: int number of jumps to perform each random walk
+    :param astr_list: list of astro objects
     :return astr_l or None: list of astro objects, with
-    visitation counts updated (None if bad probability matrix input)
+        visitation counts updated (None if bad probability matrix input)
     """
     # Check that probability matrix is a numpy array. It shouldn't be if
     # there were no objects between which to compare distances:
@@ -123,17 +133,17 @@ def random_walk(prob_mat, iterations, subiter, astr_l):
     return astr_l
 
 
-def create_bin(ra1, ra2, dec1, dec2, n_ra=360, n_dec=360):
+def create_bin(ra1, ra2, dec1, dec2, n_ra, n_dec):
     """
-    Create equally spaced bins for ra and dec coordinate ranges
+    Create equally spaced bins for ra and dec coordinate ranges.
+    :ra1, ra2, dec1, dec2: floats, bounds within to make bins
     :param n_ra: integer, how many bins for ra
     :param n_dec: integer, how many bins for dec
-    :ra1, ra2, dec1, dec2: floats, bounds within to make bins
-    :return ra_bins, dec_bins: tuple of numpy arrays with bin boundaries
+    :return ra_bins, dec_bins: tuple of 2 arrays with bin boundaries
     """
 
-    # "+1" Because the bins are in between numbers, so (number of bins) is
-    # (number of boundaries - 1)
+    # "+1" Because the bins are in between numbers, so (number of bins)
+    # is (number of boundaries - 1)
     ra_bins = np.linspace(start=ra1, stop=ra2, num=n_ra + 1)
     dec_bins = np.linspace(start=dec1, stop=dec2, num=n_dec + 1)
 
@@ -156,53 +166,58 @@ def sort_bins(ra, dec, ra_bins, dec_bins):
     return ra_bin - 1, dec_bin - 1  # -1 due to how digitize bins
 
 
-def apply_threshold(bounds, random_walk, num_bins):
+def apply_threshold(bounds, random_walk, num_bins, subdivs):
     '''
+    Partitions the sky into several cells and counts the total number
+    of visitations to each cell (sum of all astr.rand_walk_visits). Then
+    attempts to calcualte a threshold for which any cell with a greater
+    number of total visitations is a cluster candidate (high visitation
+    counts -> dense distribution of objects). Then applies the threshold
+    and returns any objects within the dense cells.
+    NOTE: why not use stdev to find higher density than normal bins,
+    rather than threshold? Might be faster.
     Inputs:
-        random_walk: a counter containing the visitation counts of a
-            random walk algorithm, containing the AstroObjects and their
-            visitation counts
-    Returns: nested list containing lists of AstroObjects in a given
-        cluster
+        bounds: tuple of 2 ints. RA/Dec bins for the astro objects
+        random_walk: a list of AstroObjects post random walk.
+    Yields: AstroObjects within dense cells.
     '''
     if not random_walk:
         return None
 
-    MIN_RA = 0
-    MIN_DEC = -90
-    RA_RANGE = 360
-    DEC_RANGE = 180
+    MIN_RA = 0  # Min ra possible
+    MIN_DEC = -90  # Min dec possible
+    RA_RANGE = 360  # range of ra values
+    DEC_RANGE = 180  # range of dec values
 
+    # Calculate actual bounds of ra/dec values for the AstroObjects
+    # coming in, based on the 'bounds' identifier being passed in.
     ra_l = (RA_RANGE / num_bins) * bounds[0] + MIN_RA
     dec_l = (DEC_RANGE / num_bins) * bounds[1] + MIN_DEC
     ra_u = (RA_RANGE / num_bins) * (bounds[0] + 1) + MIN_RA
     dec_u = (DEC_RANGE / num_bins) * (bounds[1] + 1) + MIN_DEC
 
-    ra_bins, dec_bins = create_bin(
-        ra_l, ra_u, dec_l, dec_u, n_ra=10, n_dec=10)
-    lowest_ra = inf
-    lowest_dec = inf
-    for i in random_walk:
-        if i.ra < lowest_ra:
-            lowest_ra = i.ra
-        if i.dec < lowest_dec:
-            lowest_dec = i.dec
+    # Using the above calculates, partition the objects based on ra/dec
+    ra_bins, dec_bins = create_bin(ra_l, ra_u, dec_l, dec_u, subdivs, subdivs)
 
+    # Build matrix of visit counts. Each cell is total counts for all
+    # objects within that ra/dec bin.
     prob_mtrx = np.zeros((len(ra_bins) - 1, len(dec_bins) - 1))
-
     for astr in random_walk:
         ra_bin, dec_bin = sort_bins(astr.ra, astr.dec, ra_bins, dec_bins)
         prob_mtrx[ra_bin][dec_bin] += astr.rand_walk_visits
         astr.bin_id = [ra_bin, dec_bin]
 
+    # Attempt to threshold and filter.
     try:
-        thresh = skimage.filters.threshold_minimum(prob_mtrx)
+        thresh = threshold_minimum(prob_mtrx)
         clusters = (prob_mtrx >= thresh) * prob_mtrx
         clusters_idx = np.transpose(np.nonzero(clusters))
 
     except:
         return None
 
+    # Check each object to see if its in a dense cell. If so, yield.
+    # NOTE: Could this be done a more efficient way?
     for astr in random_walk:
         if astr.bin_id in clusters_idx:
             yield None, astr
