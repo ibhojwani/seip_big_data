@@ -16,7 +16,7 @@ class MrBoxAstroObjects(MRJob):
 
     # pass data internally with pickle
     INTERNAL_PROTOCOL = PickleProtocol
-    OUTPUT_PROTOCOL = RawValueProtocol
+    OUTPUT_PROTOCOL = PickleProtocol
 
     def mapper_init(self):
         # Initialize bins
