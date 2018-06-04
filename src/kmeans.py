@@ -24,7 +24,7 @@ class KMeansMR(MRJob):
 
     INTERNAL_PROTOCOL = PickleProtocol
 
-    ITERATIONS = 10  # number
+    ITERATIONS = 1  # number
     STD_CUTOFF = 3.5
 
     centroids = [(0, 0), (0.6, 4)]  # Approx location of centroids
