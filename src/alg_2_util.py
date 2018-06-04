@@ -7,7 +7,7 @@ Utility functions for algorithm 2 (alg_2.py).
 """
 
 import numpy as np
-from skimage.filter import threshold_minimum
+from skimage.filters import threshold_minimum
 
 from astro_object import AstroObject
 
