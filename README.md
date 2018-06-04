@@ -16,6 +16,9 @@ The second algorithm finds clusters by binning stars according to ra and dec, an
 ### Algorithm 2
     >>> python3 alg_2.py input_file > outfile
 
+### Output
+Both algorithms output a dictionary style representation of the AstroObject, including info on sky position, the WISE object ID, and its photometry.
+
 
 ## Directory Structure
 - src/ 
