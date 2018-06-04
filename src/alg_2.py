@@ -35,8 +35,8 @@ class Algorithm2MR(KMeansMR, StdevMR):
     # pass data internally with pickle, use TextValue for readable output
     OUTPUT_PROTOCOL = TextValueProtocol
 
-    NUM_ITER = 20  # How many random walks to run
-    NUM_JUMPS = 100  # How many jumps to make within each random walk
+    NUM_ITER = 40  # How many random walks to run
+    NUM_JUMPS = 200  # How many jumps to make within each random walk
     SUBDIVS = 60  # How many ra/dec subdivs to make for thresholding
     STD_CUTOFF = 4
 
