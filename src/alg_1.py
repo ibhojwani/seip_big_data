@@ -78,7 +78,7 @@ class Algorithm1MR(KMeansMR, StdevMR):
             astr: AstroObject
         Yields: junk, AstroObject
         '''
-        if astr.dist_from_center < self.stdev[junk] / 1:
+        if astr.dist_from_center < self.stdev[junk] / self.STD_CUTOFF:
             yield junk, astr
 
     def reducer_return(self, junk, astr_gen):

@@ -150,8 +150,8 @@ class AstroObject:
         if self.objid:
             rv = ""
             for field in self.__dict__.keys():
-                rv += "{}: {}\n".format(field, self.__dict__[field])
-            return rv
+                rv += "{}: {},".format(field, self.__dict__[field])
+            return rv[:-1]
         else:
             return ""
 
