@@ -114,7 +114,7 @@ class Algorithm2MR(KMeansMR, StdevMR):
         std = self.get_steps_std()
 
         final = [MRStep(mapper=self.mapper_return)]
-
+        
         return clustering + kmeans + std + final
 
 
