@@ -1,4 +1,5 @@
-
+# This was an alternative boostrap script which we trialed but
+# did not resolve our installation issues on the cluster
 
 # set up vm instance
 
