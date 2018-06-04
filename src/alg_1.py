@@ -17,7 +17,7 @@ are then returned as YSO candidates.
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-from mrjob.protocol import UltraJSONValueProtocol
+from mrjob.protocol import TextValueProtocol
 
 import alg_1_util
 from kmeans import KMeansMR
@@ -35,7 +35,7 @@ class Algorithm1MR(KMeansMR, StdevMR):
     BINS = 15  # Number of bins into which we histogram the points
     STD_CUTOFF = 2.5
 
-    OUTPUT_PROTOCOL = UltraJSONValueProtocol
+    OUTPUT_PROTOCOL = TextValueProtocol
 
     def mapper_clust_init(self):
         '''
@@ -83,7 +83,7 @@ class Algorithm1MR(KMeansMR, StdevMR):
 
     def reducer_return(self, junk, astr_gen):
         for astr in astr_gen:
-            yield junk, astr
+            yield junk, astr.__repr__()
 
     def steps(self):
         # Find color outliers
