@@ -38,6 +38,13 @@ Both algorithms output a dictionary style representation of the AstroObject, inc
     - MRJob implementation of k-means algorithm.
   - stdev.py
     - MRJob implementation of standard deviation calculation
+  - obselete/
+    - spark_outliers.py
+      - Spark implementation of color outlier filtering
+    - edgesanddistance.py
+      - Old implementation of algorithm 1 clustering
+    - syria_dmg_assess_old/
+      - Code for failed project, in which we tried to track damage assessments in syria
 - data/
     - contains a few small sample data files
 - scripts/
