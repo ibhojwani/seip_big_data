@@ -82,8 +82,9 @@ class Algorithm1MR(KMeansMR, StdevMR):
         if astr.dist_from_center < self.stdev[junk] / 1:
             yield junk, astr
 
-    def reducer_return(self, junk, astr):
-        yield junk, astr
+    def reducer_return(self, junk, astr_gen):
+        for astr in astr_gen:
+            yield junk, astr
 
     def steps(self):
         # Find color outliers
