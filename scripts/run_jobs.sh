@@ -32,7 +32,7 @@ time python3  src/group_objects.py -r dataproc \
 --file src/astro_object.py  --file src/kmeans.py \
 --file src/alg_2.py --file src/stdev.py --file src/alg_2_util.py --file src/alg_1_util.py \
 --file src/astro_object.py \
- --bootstrap-python --bootstrap-script=bootstrap.
+ --bootstrap-python --bootstrap-script=bootstrap.sh
 
 # delete the cluster
 
