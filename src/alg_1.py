@@ -8,7 +8,7 @@ the ALLWISE catalog.
 
 Color-color ratios for objects in the infrared tend to fall into 2
 groups. This uses a k-means algorithm to separate the groups and find
-outliers within those groups. Then, it estimates distances between
+outliers within those groups.Then, it estimates distances between
 groups of outliers and draws a radius around each outlier where a
 potential cluster could fall. Finally, it finds those objects with a
 uniquely small radius, implying it lies in a dense region. These objects
@@ -18,7 +18,6 @@ are then returned as YSO candidates.
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 from mrjob.protocol import UltraJSONValueProtocol
-from math import inf
 
 import alg_1_util
 from kmeans import KMeansMR
