@@ -35,7 +35,7 @@ The second algorithm finds clusters by binning stars according to ra and dec, an
     - MRJob implementation of k-means algorithm.
   - stdev.py
     - MRJob implementation of standard deviation calculation
-- data
+- data/
     - contains a few small sample data files
 - scripts/
   - useful scripts we used
