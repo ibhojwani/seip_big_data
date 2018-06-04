@@ -17,7 +17,7 @@ an outlier. Then returns those objects.
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-from mrjob.protocol import PickleProtocol, UltraJSONValueProtocol
+from mrjob.protocol import TextValueProtocol
 import numpy as np
 
 import astro_object
@@ -32,8 +32,8 @@ class Algorithm2MR(KMeansMR, StdevMR):
     for clusters within each bin. Then finds color outliers.
     """
 
-    # pass data internally with pickle, use uJSON for fast output
-    OUTPUT_PROTOCOL = UltraJSONValueProtocol
+    # pass data internally with pickle, use TextValue for readable output
+    OUTPUT_PROTOCOL = TextValueProtocol
 
     NUM_ITER = 20  # How many random walks to run
     NUM_JUMPS = 100  # How many jumps to make within each random walk
@@ -100,7 +100,10 @@ class Algorithm2MR(KMeansMR, StdevMR):
         Yields: None, AstroObject
         '''
         if astr.dist_from_center > self.stdev[center] * self.STD_CUTOFF:
-            yield None, astr
+            try:
+                yield None, astr.__repr__()
+            except:
+                pass
 
     def steps(self):
         '''
