@@ -23,7 +23,7 @@ time python3 src/obsolete/edgesanddistance.py -r dataproc --cluster-id=star-find
 --file src/astro_object.py  --file src/kmeans.py \
 --file src/alg_2.py --file src/stdev.py --file src/alg_2_util.py --file src/alg_1_util.py \
 --file src/astro_object.py \
- --bootstrap-python --bootstrap-script=bootstrap.
+ --bootstrap-python --bootstrap-script=scripts/bootstrap.sh
 
 # run algorithm 2
 
