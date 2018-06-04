@@ -13,7 +13,6 @@ distributed. Finding these centroids allows for color outlier analysis.
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 from mrjob.protocol import PickleProtocol
-from math import inf
 
 from astro_object import AstroObject
 
@@ -90,7 +89,7 @@ def map_kmeans(centroids, astr):
     # Calc closest centroid, yield that centroid and obj colors
     if astr.is_complete():
         center_idx = None
-        closest = inf
+        closest = float('inf')
         for i, center in enumerate(centroids):
             dist = astr.sq_euc_2d(
                 astr.color1, astr.color2, center[0], center[1])
