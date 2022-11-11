@@ -125,7 +125,7 @@ Pygments==2.2.0
 pyparsing==2.2.0
 pyproj==1.9.5.1
 PySAL==1.14.3
-pyspark==2.3.0
+pyspark==3.2.2
 pytest==3.5.1
 python-dateutil==2.7.0
 python-magic==0.4.15
